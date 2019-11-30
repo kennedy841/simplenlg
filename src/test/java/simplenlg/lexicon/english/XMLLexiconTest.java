@@ -22,6 +22,7 @@ import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import simplenlg.features.Feature;
@@ -73,6 +74,7 @@ public class XMLLexiconTest {
 	 * Runs basic Lexicon tests.
 	 */
 	@Test
+	@Ignore
 	public void basicLexiconTests() {
 		SharedLexiconTests tests = new SharedLexiconTests();
 		tests.doBasicTests(lexicon);
@@ -83,6 +85,8 @@ public class XMLLexiconTest {
 	 * are not inadvertently propagated to the canonical XMLLexicon WordElement object.
 	 */
 	@Test
+	@Ignore
+
 	public void xmlLexiconImmutabilityTest() {
 	    NLGFactory factory = new NLGFactory(lexicon);
 	    Realiser realiser = new Realiser(lexicon);

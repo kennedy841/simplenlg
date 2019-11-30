@@ -14,23 +14,25 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.lexicon;
 
 import java.util.List;
+import java.util.Map;
 
+import simplenlg.framework.Language;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.WordElement;
 
 /**
  * This is the generic abstract class for a Lexicon. In simplenlg V4, a
  * <code>Lexicon</code> is a collection of
- * {@link simplenlg.framework.WordElement} objects; it does not do any
+ * {@link WordElement} objects; it does not do any
  * morphological processing (as was the case in simplenlg V3). Information about
  * <code>WordElement</code> can be obtained from a database (
- * {@link simplenlg.lexicon.NIHDBLexicon}) or from an XML file (
- * {@link simplenlg.lexicon.XMLLexicon}). Simplenlg V4 comes with a default
+ * {@link NIHDBLexicon}) or from an XML file (
+ * {@link XMLLexicon}). Simplenlg V4 comes with a default
  * (XML) lexicon, which is retrieved by the <code>getDefaultLexicon</code>
  * method.
  * 
@@ -38,7 +40,7 @@ import simplenlg.framework.WordElement;
  * <code>lookupWord</code>. More control is available from the
  * <code>getXXXX</code> methods, which allow words to retrieved in several ways
  * <OL>
- * <LI>baseform and {@link simplenlg.framework.LexicalCategory}; for example
+ * <LI>baseform and {@link LexicalCategory}; for example
  * "university" and <code>Noun</code>
  * <LI>just baseform; for example, "university"
  * <LI>ID string (if this is supported by the underlying DB or XML file); for
@@ -49,20 +51,20 @@ import simplenlg.framework.WordElement;
  * "United Kingdom" are regarded as different words). <br>
  * <I>Note:</I> variant lookup is not guaranteed, this is a feature which
  * hopefully will develop over time
- * <LI>variant and {@link simplenlg.framework.LexicalCategory}; for example
+ * <LI>variant and {@link LexicalCategory}; for example
  * "universities" and <code>Noun</code>
  * </OL>
  * 
  * For each type of lookup, there are three methods
  * <UL>
  * <LI> <code>getWords</code>: get all matching
- * {@link simplenlg.framework.WordElement} in the Lexicon. For example,
+ * {@link WordElement} in the Lexicon. For example,
  * <code>getWords("dog")</code> would return a <code>List</code> of two
  * <code>WordElement</code>, one for the noun "dog" and one for the verb "dog".
  * If there are no matching entries in the lexicon, this method returns an empty
  * collection
  * <LI> <code>getWord</code>: get a single matching
- * {@link simplenlg.framework.WordElement} in the Lexicon. For example,
+ * {@link WordElement} in the Lexicon. For example,
  * <code>getWord("dog")</code> would a <code> for either the noun "dog" or the
  * verb "dog" (unpredictable).   If there are no matching entries in
  * the lexicon, this method will create a default <code>WordElement</code> based
@@ -77,9 +79,54 @@ import simplenlg.framework.WordElement;
 
 public abstract class Lexicon {
 
+	// The language of this lexicon.
+	// added by vaudrypl 
+	private final Language language;
+	
 	/****************************************************************************/
 	// constructors and related
 	/****************************************************************************/
+
+	/**
+	 * Creates a new lexicon with default associated language.
+	 * @author vaudrypl
+	 */
+	public Lexicon() {
+		this(Language.DEFAULT_LANGUAGE);
+	}
+
+	/**
+	 * Creates a new lexicon with the associated language.
+	 * 
+	 * @param language
+	 *            the associated language
+	 * @author vaudrypl
+	 */
+	public Lexicon(Language newLanguage) {
+		if (newLanguage == null) newLanguage = Language.DEFAULT_LANGUAGE;
+		this.language = newLanguage;
+	}
+
+	/**
+	 * Creates a new lexicon with the associated language
+	 * ISO 639-1 two letter code.
+	 * 
+	 * @param language
+	 *            the ISO 639-1 two letter code of the language
+	 * @author vaudrypl
+	 */
+	public Lexicon(String newLanguageCode) {
+		this( Language.convertCodeToLanguage( newLanguageCode ) );
+	}
+
+	/**
+	 * Gets the language used by this factory.
+	 * 
+	 * @author vaudrypl
+	 */
+	public Language getLanguage() {
+		return this.language;
+	}
 
 	/**
 	 * returns the default built-in lexicon
@@ -87,7 +134,7 @@ public abstract class Lexicon {
 	 * @return default lexicon
 	 */
 	public static Lexicon getDefaultLexicon() {
-		return new XMLLexicon();
+		return new simplenlg.lexicon.english.XMLLexicon();
 	}
 
 	/**
@@ -101,7 +148,7 @@ public abstract class Lexicon {
 	 * @return WordElement entry for specified info
 	 */
 	protected WordElement createWord(String baseForm, LexicalCategory category) {
-		return new WordElement(baseForm, category); // return default
+		return new WordElement(baseForm, category, this); // return default
 		// WordElement of this
 		// baseForm, category
 	}
@@ -115,7 +162,7 @@ public abstract class Lexicon {
 	 * @return WordElement entry for specified info
 	 */
 	protected WordElement createWord(String baseForm) {
-		return new WordElement(baseForm); // return default WordElement of this
+		return new WordElement(baseForm, this); // return default WordElement of this
 		// baseForm
 	}
 
@@ -125,7 +172,7 @@ public abstract class Lexicon {
 	// 1) word with matching base
 	// 2) word with matching variant
 	// 3) word with matching ID
-	// 4) create a new workd
+	// 4) create a new word
 	/***************************************************************************/
 
 	/**
@@ -201,42 +248,7 @@ public abstract class Lexicon {
 		// of this baseForm,
 		// category
 		else
-			return selectMatchingWord(wordElements, baseForm);
-	}
-
-	/** choose a single WordElement from a list of WordElements.  Prefer one
-	 * which exactly matches the baseForm
-	 * @param wordElements
-	 *           - list of WordElements retrieved from lexicon
-	 * @param baseForm
-	             - base form of word, eg "be" or "dog" (not "is" or "dogs")
-	 * @return single WordElement (from list)
-	 */
-	private WordElement selectMatchingWord(List<WordElement> wordElements, String baseForm) {
-		// EHUD REITER  - this method added because some DBs are case-insensitive,
-		// so a query on "man" returns both "man" and "MAN".  In such cases, the
-		// exact match (eg, "man") should be returned
-		
-		// below check is redundant, since caller should check this
-		if (wordElements == null || wordElements.isEmpty())
-			return createWord(baseForm);
-		
-		// look for exact match in base form
-		for (WordElement wordElement: wordElements)
-			if (wordElement.getBaseForm().equals(baseForm))
-				return wordElement;
-		
-		// Roman Kutlak: I don't think it is a good idea to return a word whose
-		// case does not match because if a word appears in the lexicon
-		// as an acronym only, it will be replaced as such. For example,
-		// "foo" will return as the acronym "FOO". This does not seem desirable.
-		// else return first element in list
-		if(wordElements.get(0).getBaseForm().equalsIgnoreCase(baseForm)) {
-			return createWord(baseForm, LexicalCategory.ANY);
-		}
-		
-    	return wordElements.get(0);
-		
+			return wordElements.get(0); // else return first match
 	}
 
 	/**
@@ -290,7 +302,7 @@ public abstract class Lexicon {
 			return createWord(baseForm); // return default WordElement of this
 		// baseForm
 		else
-			return selectMatchingWord(wordElements, baseForm);
+			return wordElements.get(0); // else return first match
 	}
 
 	/**
@@ -405,7 +417,7 @@ public abstract class Lexicon {
 		// using variant as base
 		// form
 		else
-			return selectMatchingWord(wordElements, variant);
+			return wordElements.get(0); // else return first match
 
 	}
 
@@ -486,6 +498,169 @@ public abstract class Lexicon {
 	 */
 	public void close() {
 		// default method does nothing
+	}
+
+	/**
+	 * Get the coordination conjunction used for addition in this lexicon.
+	 * (normally "and" in English, "et" in French, etc.)
+	 * If the lexicon uses the same word IDs than the NIH Specialist lexicon
+	 * and the default English XML lexicon, than this would be "E0008890".
+	 * If this is not found, it selects the conjunction in function of
+	 * the language of this lexicon. The default is "and". It creates it if
+	 * it not found.
+	 * This can be overridden by subclasses if this default implementation
+	 * is inadequate.
+	 * 
+	 * @return	the coordination conjunction used for addition in this lexicon
+	 * 
+	 * @author vaudrypl
+	 */
+	public WordElement getAdditionCoordConjunction() {
+		WordElement conjunction;
+		
+		if (hasWordByID("E0008890")) {
+			conjunction = getWordByID("E0008890");
+		} else {
+			switch (getLanguage()) {
+			case FRENCH :
+				conjunction = lookupWord("et", LexicalCategory.CONJUNCTION);
+				break;
+			case ITALIAN:
+				conjunction = lookupWord("e", LexicalCategory.CONJUNCTION);
+				break;
+			case ENGLISH : default:
+				conjunction = lookupWord("and", LexicalCategory.CONJUNCTION);
+				break;
+			}
+		}
+		
+		return conjunction;
+	}
+	
+	/**
+	 * Get the preposition used for passive subjects in this lexicon.
+	 * (normally "by" in English, "par" in French, etc.)
+	 * If the lexicon uses the same word IDs than the NIH Specialist lexicon
+	 * and the default English XML lexicon, than this would be "E0014539".
+	 * If this is not found, it selects the preposition in function of
+	 * the language of this lexicon. The default is "by". It creates it if
+	 * it not found.
+	 * This can be overridden by subclasses if this default implementation
+	 * is inadequate.
+	 * 
+	 * @return	the preposition used for passive subjects in this lexicon
+	 * 
+	 * @author vaudrypl
+	 */
+	public WordElement getPassivePreposition() {
+		WordElement preposition;
+		
+		if (hasWordByID("E0014539")) {
+			preposition = getWordByID("E0014539");
+		} else {
+			switch (getLanguage()) {
+			case FRENCH :
+				preposition = lookupWord("par", LexicalCategory.PREPOSITION); 
+				break;
+			case ITALIAN: 
+				preposition = lookupWord("da", LexicalCategory.PREPOSITION); 
+				break;
+			case ENGLISH : default:
+				preposition = lookupWord("by", LexicalCategory.PREPOSITION); 
+				break;
+			}
+		}
+		
+		return preposition;
+	}
+	
+	/**
+	 * Get the default complementiser for clauses.
+	 * This can be overridden by subclasses if this default implementation
+	 * is inadequate.
+	 * 
+	 * @return	the default complementiser for clauses in this lexicon
+	 * 
+	 * @author vaudrypl
+	 */
+	public WordElement getDefaultComplementiser() {
+		WordElement complementiser;
+		
+		switch (getLanguage()) {
+		case FRENCH :
+			complementiser = lookupWord("que", LexicalCategory.COMPLEMENTISER); 
+			break;
+		case ITALIAN :
+			complementiser = lookupWord("che", LexicalCategory.COMPLEMENTISER); 
+			break;
+		case ENGLISH : default:
+			complementiser = lookupWord("that", LexicalCategory.COMPLEMENTISER); 
+			break;
+		}
+		
+		return complementiser;
+	}
+	
+	/**
+	 * Looks for all words in the lexicon matching the category and features
+	 * provided. Not implemented in the Lexicon base class. Will trow an
+	 * exception if called and not overridden. (An abstract method could
+	 * have been used here, of course, but we did it this way to preserve
+	 * compatibility with the NIHDBLexicon subclass.)
+	 * If some of the features provided have a value of null or Boolean.FALSE,
+	 * This method will also include words who don't have those features at all.
+	 * This allows default values for features not determined by the word. 
+	 * 
+	 * @param category	category of the returned WordElement
+	 * @param features	features and their corrsponding values that
+	 *					the WordElement returned must have (it can have others)
+	 * @return			list of all WordElements found that matches the argument
+	 * 
+	 * @author vaudrypl
+	 */
+	public List<WordElement> getWords(LexicalCategory category,
+			Map<String, Object> features) {
+		throw new UnsupportedOperationException("Method not implemented.");
+	}
+	
+	/**
+	 * Looks for a word in the lexicon matching the category and features
+	 * provided. Make sure to override getWordsByCategoryAndFeatures()
+	 * before calling this method.
+	 * 
+	 * @param category	category of the returned WordElement
+	 * @param features	features and their corrsponding values that
+	 *					the WordElement returned must have (it can have others)
+	 * @return			first WordElement found that matches the argument
+	 * 
+	 * @author vaudrypl
+	 */
+	public WordElement getWord(LexicalCategory category,
+			Map<String, Object> features) {
+		List<WordElement> wordElements = getWords(category,
+				features);
+		if (wordElements.isEmpty())
+			return null;
+		else
+			return wordElements.get(0); // else return first match
+	}
+	
+	/**
+	 * Says if a word in the lexicon matches the category and features
+	 * provided. Make sure to override getWordsByCategoryAndFeatures()
+	 * before calling this method.
+	 * 
+	 * @param category	category of the returned WordElement
+	 * @param features	features and their corrsponding values that
+	 *					the WordElement returned must have (it can have others)
+	 * @return <code>true</code> if Lexicon contains such a WordElement
+	 * 
+	 * @author vaudrypl
+	 */
+	public boolean hasWord(LexicalCategory category,
+			Map<String, Object> features) {// convenience method derived from
+		// other methods) {
+		return !getWords(category, features).isEmpty();
 	}
 
 }

@@ -14,17 +14,20 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Saad Mahamood.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.lexicon;
 
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,9 +40,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import simplenlg.features.Inflection;
 import simplenlg.features.LexicalFeature;
-import simplenlg.framework.ElementCategory;
+import simplenlg.framework.Language;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.WordElement;
 
@@ -58,17 +60,25 @@ public class XMLLexicon extends Lexicon {
 	private static final String XML_ID = "id"; // base form of Word
 	private static final String XML_WORD = "word"; // node defining a word
 
+	// inflectional codes which need to be set as part of INFLECTION feature
+	private static final List<String> INFL_CODES = Arrays.asList(new String[] {
+			"reg", "irreg", "uncount", "inv", "metareg", "glreg", "nonCount", "sing", "groupuncount" });
+
 	// lexicon
 	private Set<WordElement> words; // set of words
 	private Map<String, WordElement> indexByID; // map from ID to word
 	private Map<String, List<WordElement>> indexByBase; // map from base to set
 	// of words with this
 	// baseform
-	private Map<String, List<WordElement>> indexByVariant; // map from variants
+	protected /*private*/ Map<String, List<WordElement>> indexByVariant; // map from variants
 
 	// to set of words
 	// with this variant
 
+	// added by vaudrypl
+	protected Map<LexicalCategory, List<WordElement>> indexByCategory; // map from variants
+
+	
 	/**********************************************************************/
 	// constructors
 	/**********************************************************************/
@@ -105,24 +115,130 @@ public class XMLLexicon extends Lexicon {
 	}
 
 	public XMLLexicon() {
+		this(Language.DEFAULT_LANGUAGE);
+	}
+
+	/**
+	 * Loads the default XML lexicon corresponding to a particular language 
+	 * 
+	 * @param language
+	 */
+	public XMLLexicon(Language language) {
+		super(language);
+		if (language == null) language = Language.DEFAULT_LANGUAGE;
+		
+		String xmlLexiconFilePath;
+		switch (language) {
+		case FRENCH :
+			xmlLexiconFilePath = "/default-french-lexicon.xml";
+			break;
+		//CRI
+		case ITALIAN:
+			///Users/cristina/Documents/workspace/SimpleNLG-EnFr-master/bin/simplenlg/lexicon/ita
+			xmlLexiconFilePath = "/default-italian-lexicon.xml";
+			break;
+		default :
+			xmlLexiconFilePath = "/default-lexicon.xml";
+		}
+		
 		try {
-			
-			URL defaultLexicon = this.getClass().getClassLoader().getResource("default-lexicon.xml");
-			
-			if(null != defaultLexicon) {
-				createLexicon(defaultLexicon.toURI());
-			} else {
-				createLexicon(this.getClass().getResource(
-						"/simplenlg/lexicon/default-lexicon.xml").toURI());
-			}
-			
+			createLexicon(getClass().getResource(xmlLexiconFilePath).toURI());
 		} catch (URISyntaxException ex) {
 			System.out.println(ex.toString());
 		}
 	}
+	
+	/**
+	 * Load an XML Lexicon from a named file
+	 * with the associated language
+	 * 
+	 * @param language
+	 *            the associated language
+	 * @param filename
+	 * @author vaudrypl
+	 */
+	public XMLLexicon(Language language, String filename) {
+		super(language);
+		File file = new File(filename);
+		createLexicon(file.toURI());
+	}
+
+	/**
+	 * Load an XML Lexicon from a named file
+	 * with the ISO 639-1 two letter code of the associated language 
+	 * 
+	 * @param language
+	 *            the associated language ISO 639-1 two letter code
+	 * @param filename
+	 * @author vaudrypl
+	 */
+	public XMLLexicon(String languageCode, String filename) {
+		super(languageCode);
+		File file = new File(filename);
+		createLexicon(file.toURI());
+	}
+
+	/**
+	 * Load an XML Lexicon from a file
+	 * with the associated language
+	 * 
+	 * @param language
+	 *            the associated language
+	 * @param file
+	 * @author vaudrypl
+	 */
+	public XMLLexicon(Language language, File file) {
+		super(language);
+		createLexicon(file.toURI());
+	}
+
+	/**
+	 * Load an XML Lexicon from a file
+	 * with the ISO 639-1 two letter code of the associated language 
+	 * 
+	 * @param language
+	 *            the associated language ISO 639-1 two letter code
+	 * @param file
+	 * @author vaudrypl
+	 */
+	public XMLLexicon(String languageCode, File file) {
+		super(languageCode);
+		createLexicon(file.toURI());
+	}
+
+	/**
+	 * Load an XML Lexicon from a URI
+	 * with the associated language
+	 * 
+	 * @param language
+	 *            the associated language
+	 * @param lexiconURI
+	 * @author vaudrypl
+	 */
+	public XMLLexicon(Language language, URI lexiconURI) {
+		super(language);
+		createLexicon(lexiconURI);
+	}
+
+	/**
+	 * Load an XML Lexicon from a URI
+	 * with the ISO 639-1 two letter code of the associated language 
+	 * 
+	 * @param language
+	 *            the associated language ISO 639-1 two letter code
+	 * @param lexiconURI
+	 * @author vaudrypl
+	 */
+	public XMLLexicon(String languageCode, URI lexiconURI) {
+		super(languageCode);
+		createLexicon(lexiconURI);
+	}
 
 	/**
 	 * method to actually load and index the lexicon from a URI
+	 * 
+	 * vaudrypl removed call to addSpecialCases() and moved this
+	 * method to simplenlg.lexicon.english.XMLLexicon
 	 * 
 	 * @param uri
 	 */
@@ -132,6 +248,8 @@ public class XMLLexicon extends Lexicon {
 		indexByID = new HashMap<String, WordElement>();
 		indexByBase = new HashMap<String, List<WordElement>>();
 		indexByVariant = new HashMap<String, List<WordElement>>();
+		// added by vaudrypl
+		indexByCategory = new EnumMap<LexicalCategory, List<WordElement>>(LexicalCategory.class);
 
 		try {
 			DocumentBuilderFactory factory = DocumentBuilderFactory
@@ -157,24 +275,6 @@ public class XMLLexicon extends Lexicon {
 		} catch (Exception ex) {
 			System.out.println(ex.toString());
 		}
-
-		addSpecialCases();
-	}
-
-	/**
-	 * add special cases to lexicon
-	 * 
-	 */
-	private void addSpecialCases() {
-		// add variants of "be"
-		WordElement be = getWord("be", LexicalCategory.VERB);
-		if (be != null) {
-			updateIndex(be, "is", indexByVariant);
-			updateIndex(be, "am", indexByVariant);
-			updateIndex(be, "are", indexByVariant);
-			updateIndex(be, "was", indexByVariant);
-			updateIndex(be, "were", indexByVariant);
-		}
 	}
 
 	/**
@@ -183,11 +283,14 @@ public class XMLLexicon extends Lexicon {
 	 * @param wordNode
 	 * @return
 	 * @throws XPathUtilException
-	 */
-	private WordElement convertNodeToWord(Node wordNode) {
+	 *
+	 * access level modifier changed by Pierre-Luc Vaudry from private
+	 * to protected to allow overriding in subclass
+	 */ 
+	/*private*/ protected WordElement convertNodeToWord(Node wordNode) {
 		// if this isn't a Word node, ignore it
 		if (!wordNode.getNodeName().equalsIgnoreCase(XML_WORD))
-			return null;
+			return null;		
 
 		// // if there is no base, flag an error and return null
 		// String base = XPathUtil.extractValue(wordNode, Constants.XML_BASE);
@@ -197,9 +300,9 @@ public class XMLLexicon extends Lexicon {
 		// }
 
 		// create word
-		WordElement word = new WordElement();
-		List<Inflection> inflections = new ArrayList<Inflection>();
-
+		WordElement word = new WordElement(this);
+		List<String> inflections = new ArrayList<String>();
+		
 		// now copy features
 		NodeList nodes = wordNode.getChildNodes();
 		for (int i = 0; i < nodes.getLength(); i++) {
@@ -213,7 +316,7 @@ public class XMLLexicon extends Lexicon {
 					value = value.trim();
 
 				if (feature == null) {
-					System.err.println("Error in XML lexicon node for "
+					System.out.println("Error in XML lexicon node for "
 							+ word.toString());
 					break;
 				}
@@ -225,15 +328,12 @@ public class XMLLexicon extends Lexicon {
 							.toUpperCase()));
 				else if (feature.equalsIgnoreCase(XML_ID))
 					word.setId(value);
-
 				else if (value == null || value.equals("")) {
-					// if this is an infl code, add it to inflections
-					Inflection infl = Inflection.getInflCode(feature);
-
-					if (infl != null) {
-						inflections.add(infl);
+					if (INFL_CODES.contains(feature)) {
+						// if this is an infl code, add it to inflections
+						inflections.add(feature);
 					} else {
-						// otherwise assume it's a boolean feature
+						//otherwise assume it's a boolean feature
 						word.setFeature(feature, true);
 					}
 				} else
@@ -241,23 +341,17 @@ public class XMLLexicon extends Lexicon {
 			}
 
 		}
-
-		// if no infl specified, assume regular
-		if (inflections.isEmpty()) {
-			inflections.add(Inflection.REGULAR);
-		}
-
-		// default inflection code is "reg" if we have it, else random pick form
-		// infl codes available
-		Inflection defaultInfl = inflections.contains(Inflection.REGULAR) ? Inflection.REGULAR
-				: inflections.get(0);		
 		
+		//if no infl specified, assume regular
+		if(inflections.isEmpty()) {
+			inflections.add("reg");
+		} 
+		
+		//default inflection code is "reg" if we have it, else random pick form infl codes available
+		String defaultInfl = inflections.contains("reg") ? "reg" : inflections.get(0);
+		
+		word.setFeature(LexicalFeature.INFLECTIONS, inflections);
 		word.setFeature(LexicalFeature.DEFAULT_INFL, defaultInfl);
-		word.setDefaultInflectionalVariant(defaultInfl);
-		
-		for(Inflection infl: inflections) {
-			word.addInflectionalVariant(infl);
-		}
 
 		// done, return word
 		return word;
@@ -290,7 +384,31 @@ public class XMLLexicon extends Lexicon {
 			updateIndex(word, variant, indexByVariant);
 		}
 
+		// added by vaudrypl
+		// now index by category
+		LexicalCategory category = (LexicalCategory) word.getCategory();
+		// shouldn't really need is, as all words have category
+		if (category != null) {
+			if (!indexByCategory.containsKey(category)) {
+				indexByCategory.put(category, new ArrayList<WordElement>());
+			}
+			indexByCategory.get(category).add(word);
+		}
+
 		// done
+	}
+
+	/**
+	 * routine for getting morph variants, should be overridden by subclass
+	 * for specific language
+	 * @param word
+	 * @return set of variants of the word
+	 * @author vaudrypl
+	 */
+	protected Set<String> getVariants(WordElement word) {
+		Set<String> variants = new HashSet<String>();
+		variants.add(word.getBaseForm());
+		return variants;
 	}
 
 	/**
@@ -300,11 +418,48 @@ public class XMLLexicon extends Lexicon {
 	 * @param base
 	 * @param index
 	 */
-	private void updateIndex(WordElement word, String base,
+	protected /*private*/ void updateIndex(WordElement word, String base,
 			Map<String, List<WordElement>> index) {
 		if (!index.containsKey(base))
 			index.put(base, new ArrayList<WordElement>());
 		index.get(base).add(word);
+	}
+
+	/**
+	 * creates a default WordElement and adds it to the lexicon
+	 * 
+	 * @param baseForm
+	 *            - base form of word
+	 * @param category
+	 *            - category of word
+	 * @return WordElement entry for specified info
+	 * @author vaudrypl
+	 */
+	@Override
+	protected WordElement createWord(String baseForm, LexicalCategory category) {
+		WordElement newWord = super.createWord(baseForm, category);
+		words.add(newWord);
+		IndexWord(newWord);
+		return newWord; // return default
+		// WordElement of this
+		// baseForm, category
+	}
+
+	/**
+	 * creates a default WordElement and adds it to the lexicon
+	 * 
+	 * @param baseForm
+	 *            - base form of word
+	 * @return WordElement entry for specified info
+	 * @author vaudrypl
+	 */
+	@Override
+	protected WordElement createWord(String baseForm) {
+		WordElement newWord = super.createWord(baseForm);
+		words.add(newWord);
+		IndexWord(newWord);
+		return newWord;  // return default WordElement of this
+		// baseForm
 	}
 
 	/******************************************************************************************/
@@ -335,25 +490,19 @@ public class XMLLexicon extends Lexicon {
 		List<WordElement> result = new ArrayList<WordElement>();
 
 		// case 1: unknown, return empty list
-		if (!indexMap.containsKey(indexKey)) {
+		if (!indexMap.containsKey(indexKey))
 			return result;
-		}
 
 		// case 2: category is ANY, return everything
-		if (category == LexicalCategory.ANY) {
-			for(WordElement word : indexMap.get(indexKey)) {
-				result.add(new WordElement(word));
-			}
-			return result;
-		}
-		else {
-			// case 3: other category, search for match
-			for (WordElement word : indexMap.get(indexKey)) {
-				if (word.getCategory() == category) {
-					result.add(new WordElement(word));
-				}
-			}
-		}	
+		if (category == LexicalCategory.ANY)
+			return indexMap.get(indexKey);
+
+		// case 3: other category, search for match
+		else
+			for (WordElement word : indexMap.get(indexKey))
+				if (word.getCategory() == category)
+					result.add(word);
+
 		return result;
 	}
 
@@ -365,9 +514,8 @@ public class XMLLexicon extends Lexicon {
 	@Override
 	public List<WordElement> getWordsByID(String id) {
 		List<WordElement> result = new ArrayList<WordElement>();
-		if (indexByID.containsKey(id)) {
-			result.add(new WordElement(indexByID.get(id)));
-		}
+		if (indexByID.containsKey(id))
+			result.add(indexByID.get(id));
 		return result;
 	}
 
@@ -384,93 +532,66 @@ public class XMLLexicon extends Lexicon {
 	}
 
 	/**
-	 * quick-and-dirty routine for getting morph variants should be replaced by
-	 * something better!
+	 * Looks for all words in the lexicon matching the category and features
+	 * provided. If some of the features provided have a value of null or Boolean.FALSE,
+	 * This method will also include words who don't have those features at all.
+	 * This allows default values for features not determined by the word. 
 	 * 
-	 * @param word
-	 * @return
+	 * @param category	category of the returned WordElement
+	 * @param features	features and their corrsponding values that
+	 *					the WordElement returned must have (it can have others)
+	 * @return			list of all WordElements found that matches the argument
+	 * 
+	 * @author vaudrypl
 	 */
-	private Set<String> getVariants(WordElement word) {
-		Set<String> variants = new HashSet<String>();
-		variants.add(word.getBaseForm());
-		ElementCategory category = word.getCategory();
-		if (category instanceof LexicalCategory) {
-			switch ((LexicalCategory) category) {
-			case NOUN:
-				variants.add(getVariant(word, LexicalFeature.PLURAL, "s"));
-				break;
+	@Override
+	public List<WordElement> getWords(LexicalCategory category,
+			Map<String, Object> features) {
+		List<WordElement> result = new ArrayList<WordElement>();
+		Collection<WordElement> collection = null;
+		Iterator<WordElement> iterator = null;
 
-			case ADJECTIVE:
-				variants
-						.add(getVariant(word, LexicalFeature.COMPARATIVE, "er"));
-				variants
-						.add(getVariant(word, LexicalFeature.SUPERLATIVE, "est"));
-				break;
-
-			case VERB:
-				variants.add(getVariant(word, LexicalFeature.PRESENT3S, "s"));
-				variants.add(getVariant(word, LexicalFeature.PAST, "ed"));
-				variants.add(getVariant(word, LexicalFeature.PAST_PARTICIPLE,
-						"ed"));
-				variants.add(getVariant(word,
-						LexicalFeature.PRESENT_PARTICIPLE, "ing"));
-				break;
-
-			default:
-				// only base needed for other forms
-				break;
+		if (category == LexicalCategory.ANY) {
+			// use the whole lexicon
+			collection = words;
+		} else if (indexByCategory.containsKey(category)) {
+			collection = indexByCategory.get(category);
+		}
+		
+		if (collection != null) iterator = collection.iterator();
+		
+		// if the index by category doesn't contain the category wanted,
+		// skip this part and return an empty list
+		if (iterator != null) {
+			if (features == null) {
+				result.addAll(collection);
+			}else {
+				// must convert map to set to use contains()
+				Set<Map.Entry<String, Object>> featuresToCheck = features.entrySet();
+				while (iterator.hasNext()) {
+					WordElement currentWord = iterator.next();
+					Map<String, Object> currentFeaturesMap = currentWord.getAllFeatures();
+					Set<Map.Entry<String, Object>> currentFeaturesSet = currentFeaturesMap.entrySet();
+	
+	/*				Doesn't add a word to the list if the following is not true for
+					at least one feature received as argument :
+					The word has this feature and its corresponding value OR
+					The value of this feature is null or Boolean.FALSE and the word
+					doesn't have this feature at all.
+	*/				boolean addWord = true;
+					for (Map.Entry<String, Object> entry : featuresToCheck) {
+						if ( !( currentFeaturesSet.contains( entry ) || 
+							((entry.getValue() == null || entry.getValue() == Boolean.FALSE)
+									&& !currentFeaturesMap.containsKey(entry.getKey())) ) ) {
+							addWord = false;
+							break;
+						}
+					}
+					if (addWord) result.add(currentWord);
+				}
 			}
 		}
-		return variants;
-	}
 
-	/**
-	 * quick-and-dirty routine for computing morph forms Should be replaced by
-	 * something better!
-	 * 
-	 * @param word
-	 * @param feature
-	 * @param string
-	 * @return
-	 */
-	private String getVariant(WordElement word, String feature, String suffix) {
-		if (word.hasFeature(feature))
-			return word.getFeatureAsString(feature);
-		else
-			return getForm(word.getBaseForm(), suffix);
-	}
-
-	/**
-	 * quick-and-dirty routine for standard orthographic changes Should be
-	 * replaced by something better!
-	 * 
-	 * @param base
-	 * @param suffix
-	 * @return
-	 */
-	private String getForm(String base, String suffix) {
-		// add a suffix to a base form, with orthographic changes
-
-		// rule 1 - convert final "y" to "ie" if suffix does not start with "i"
-		// eg, cry + s = cries , not crys
-		if (base.endsWith("y") && !suffix.startsWith("i"))
-			base = base.substring(0, base.length() - 1) + "ie";
-
-		// rule 2 - drop final "e" if suffix starts with "e" or "i"
-		// eg, like+ed = liked, not likeed
-		if (base.endsWith("e")
-				&& (suffix.startsWith("e") || suffix.startsWith("i")))
-			base = base.substring(0, base.length() - 1);
-
-		// rule 3 - insert "e" if suffix is "s" and base ends in s, x, z, ch, sh
-		// eg, watch+s -> watches, not watchs
-		if (suffix.startsWith("s")
-				&& (base.endsWith("s") || base.endsWith("x")
-						|| base.endsWith("z") || base.endsWith("ch") || base
-						.endsWith("sh")))
-			base = base + "e";
-
-		// have made changes, now append and return
-		return base + suffix; // eg, want + s = wants
+		return result;
 	}
 }

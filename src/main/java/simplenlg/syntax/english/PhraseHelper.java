@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.syntax.english;
 
@@ -66,7 +66,6 @@ abstract class PhraseHelper {
 			PhraseHelper.realiseList(parent, realisedElement, phrase
 					.getPostModifiers(), DiscourseFunction.POST_MODIFIER);
 		}
-		
 		return realisedElement;
 	}
 
@@ -164,18 +163,12 @@ abstract class PhraseHelper {
 		// orthography and morphology processing later.
 		ListElement realisedList = new ListElement();
 		NLGElement currentElement = null;
-
 		for (NLGElement eachElement : elementList) {
 			currentElement = parent.realise(eachElement);
 
 			if (currentElement != null) {
 				currentElement.setFeature(InternalFeature.DISCOURSE_FUNCTION,
 						function);
-
-				if (eachElement.getFeatureAsBoolean(Feature.APPOSITIVE).booleanValue()) {
-					currentElement.setFeature(Feature.APPOSITIVE, true);
-				}
-
 				// realisedElement.addComponent(currentElement);
 				realisedList.addComponent(currentElement);
 			}

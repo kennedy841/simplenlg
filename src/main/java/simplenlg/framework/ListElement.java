@@ -14,14 +14,14 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.framework;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
 
 /**
@@ -57,6 +57,23 @@ public class ListElement extends NLGElement {
 	}
 
 	/**
+	 * Creates a new list element with no components.
+	 * Copies the features from the NLGElement.
+	 * @param a PhraseElement, CoordinatedPhraseElement or List
+	 *        should be used as argument
+	 * @author vaudrypl
+	 */
+	public ListElement(NLGElement phrase) {
+		this();
+		//the ListElement inherits factory, category and all features from phrase
+		setFactory(phrase.getFactory());
+		setCategory(phrase.getCategory());
+		for(String feature : phrase.getAllFeatureNames()) {
+			setFeature(feature, phrase.getFeature(feature));
+		}	
+	}
+
+	/**
 	 * Creates a new list element containing the given components.
 	 * 
 	 * @param components
@@ -65,6 +82,10 @@ public class ListElement extends NLGElement {
 	public ListElement(List<NLGElement> components) {
 		this();
 		this.addComponents(components);
+		// added by vaudrypl to know in wich language this list is
+		if (!components.isEmpty()) {
+			setFactory( components.get(0).getFactory() );
+		}
 	}
 
 	@Override
@@ -72,16 +93,16 @@ public class ListElement extends NLGElement {
 		return getFeatureAsElementList(InternalFeature.COMPONENTS);
 	}
 
-	/**
-	 * Creates a new list element containing the given component.
-	 * 
-	 * @param newComponent
-	 *            the initial component for this list element.
-	 */
-	public ListElement(NLGElement newComponent) {
-		this();
-		this.addComponent(newComponent);
-	}
+//	/**
+//	 * Creates a new list element containing the given component.
+//	 * 
+//	 * @param newComponent
+//	 *            the initial component for this list element.
+//	 */
+//	public ListElement(NLGElement newComponent) {
+//		this();
+//		this.addComponent(newComponent);
+//	}
 
 	/**
 	 * Adds the given component to the list element.
@@ -96,6 +117,8 @@ public class ListElement extends NLGElement {
 		}
 		setFeature(InternalFeature.COMPONENTS, components);
 		components.add(newComponent);
+		// added by vaudrypl
+		newComponent.setParent(this);
 	}
 
 	/**
@@ -111,6 +134,10 @@ public class ListElement extends NLGElement {
 		}
 		setFeature(InternalFeature.COMPONENTS, components);
 		components.addAll(newComponents);
+		// added by vaudrypl
+		for (NLGElement component : newComponents) {
+			component.setParent(this);
+		}
 	}
 
 	/**
@@ -122,6 +149,12 @@ public class ListElement extends NLGElement {
 	 */
 	public void setComponents(List<NLGElement> newComponents) {
 		setFeature(InternalFeature.COMPONENTS, newComponents);
+		// added by vaudrypl
+		if (newComponents != null) {
+			for (NLGElement component : newComponents) {
+				component.setParent(this);
+			}
+		}
 	}
 
 	@Override
@@ -136,14 +169,17 @@ public class ListElement extends NLGElement {
 		String lastIndent = indent == null ? " \\-" : indent + " \\-"; //$NON-NLS-1$ //$NON-NLS-2$
 		String lastChildIndent = indent == null ? "   " : indent + "   "; //$NON-NLS-1$ //$NON-NLS-2$
 		StringBuffer print = new StringBuffer();
-		print.append("ListElement: features={"); //$NON-NLS-1$
-
-		Map<String, Object> features = getAllFeatures();
-		for (String eachFeature : features.keySet()) {
-			print.append(eachFeature).append('=').append(
-					features.get(eachFeature).toString()).append(' ');
-		}
-		print.append("}\n"); //$NON-NLS-1$
+		// modified by vaudrypl
+		print.append("ListElement: "); //$NON-NLS-1$
+		print.append(super.toString());
+//		print.append("ListElement: features={"); //$NON-NLS-1$
+//
+//		Map<String, Object> features = getAllFeatures();
+//		for (String eachFeature : features.keySet()) {
+//			print.append(eachFeature).append('=').append(
+//					features.get(eachFeature).toString()).append(' ');
+//		}
+		print.append("\n"); //$NON-NLS-1$
 
 		List<NLGElement> children = getChildren();
 		int length = children.size() - 1;
@@ -176,4 +212,59 @@ public class ListElement extends NLGElement {
 		List<NLGElement> children = getChildren();
 		return children == null ? null : children.get(0);
 	}
+
+	/**
+	 * Realisation method for the syntax stage.
+	 * based on english SyntaxProcessor
+	 * 
+	 * @return syntactically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseSyntax()
+	{
+		if (getFeatureAsBoolean(Feature.ELIDED).booleanValue()) {
+			return null;
+		}
+		
+		ListElement realisedElement = new ListElement(this);
+		realisedElement.setComponents( realiseSyntax( getChildren() ) );
+		
+		// Remove the spurious ListElements that have only one element.
+		if (realisedElement.size() == 1) {
+			return realisedElement.getFirst();
+		}
+
+		return realisedElement;
+	}
+
+	/**
+	 * Realisation method for the morphology stage.
+	 * based on english MorphologyProcessor
+	 * 
+	 * @return morphologically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseMorphology()
+	{
+		ListElement realisedElement = new ListElement(this);
+		realisedElement.setComponents(realiseMorphology(getChildren()));
+		return realisedElement;
+	}
+
+	/**
+	 * Realisation method for the orthography stage.
+	 * based on english OrthographyProcessor
+	 * 
+	 * @return orthographically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseOrthography()
+	{
+		NLGElement realisedElement = getOrthographyHelper().realiseListElement(this);
+		if (realisedElement != null) {
+			realisedElement.setCategory(getCategory());
+		}
+		return realisedElement;
+	}
+	
 }

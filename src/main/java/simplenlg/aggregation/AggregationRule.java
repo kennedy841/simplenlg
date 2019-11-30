@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.aggregation;
 
@@ -24,11 +24,12 @@ import java.util.List;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
+import simplenlg.phrasespec.SPhraseSpec;
 
 /**
  * This class represents an aggregation rule. All such rules need to implement
- * an {@link #apply(NLGElement, NLGElement)} which takes an arbitrary number of
- * {@link simplenlg.framework.NLGElement}s and perform some form of aggregation
+ * an {@link #apply(SPhraseSpec...)} which takes an arbitrary number of
+ * {@link SPhraseSpec}s and perform some form of aggregation
  * on them, returning an <code>SPhraseSpec</code> as a result, or
  * <code>null</code> if the operation fails.
  * 
@@ -62,6 +63,17 @@ public abstract class AggregationRule {
 	 */
 	public NLGFactory getFactory() {
 		return this.factory;
+	}
+
+	/**
+	 * @return the factory of the element if it isn't null,
+	 *         the factory being used by this rule otherwise
+	 * @author vaudrypl
+	 */
+	public NLGFactory getFactory(NLGElement element) {
+		NLGFactory returnFactory = element.getFactory();
+		if (returnFactory == null) returnFactory = this.getFactory();
+		return returnFactory;
 	}
 
 	/**
@@ -111,7 +123,7 @@ public abstract class AggregationRule {
 
 	/**
 	 * Perform aggregation on a single phrase. This method only works on a
-	 * {@link simplenlg.framework.CoordinatedPhraseElement}, in which case it
+	 * {@link CoordinatedPhraseElement}, in which case it
 	 * calls {@link #apply(List)} on the children of the coordinated phrase,
 	 * returning a coordinated phrase whose children are the result.
 	 * 
@@ -129,7 +141,8 @@ public abstract class AggregationRule {
 				result = aggregated.get(0);
 			
 			} else {
-				result = this.factory.createCoordinatedPhrase();
+				// factory reference changed for getFactory(NLGElement) call by vaudrypl
+				result = getFactory(phrase).createCoordinatedPhrase();
 
 				for (NLGElement agg : aggregated) {
 					((CoordinatedPhraseElement) result).addCoordinate(agg);

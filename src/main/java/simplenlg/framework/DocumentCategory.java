@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 
 package simplenlg.framework;
@@ -52,9 +52,6 @@ public enum DocumentCategory implements ElementCategory {
 	/** Definition for creating a list of items. */
 	LIST,
 
-	/** Definition for creating a list of enumerated items. */
-	ENUMERATED_LIST,
-
 	/** Definition for an item in a list. */
 	LIST_ITEM;
 
@@ -73,11 +70,12 @@ public enum DocumentCategory implements ElementCategory {
 	public boolean equalTo(Object checkObject) {
 		boolean match = false;
 
-		if(checkObject != null) {
-			if(checkObject instanceof DocumentCategory) {
+		if (checkObject != null) {
+			if (checkObject instanceof DocumentCategory) {
 				match = this.equals(checkObject);
 			} else {
-				match = this.toString().equalsIgnoreCase(checkObject.toString());
+				match = this.toString()
+						.equalsIgnoreCase(checkObject.toString());
 			}
 		}
 		return match;
@@ -91,21 +89,19 @@ public enum DocumentCategory implements ElementCategory {
 	 * </p>
 	 * 
 	 * <ul>
-	 * <li><b>DOCUMENT</b>: can contain SECTIONs, PARAGRAPHs, SENTENCEs,
-	 * LISTs and ENUMERATED_LISTs. It cannot contain other DOCUMENTs or LIST_ITEMs.</li>
+	 * <li><b>DOCUMENT</b>: can contain SECTIONs, PARAGRAPHs, SENTENCEs and
+	 * LISTs. It cannot contain other DOCUMENTs or LIST_ITEMs.</li>
 	 * <li><b>SECTION</b>: can contain SECTIONs (referred to as subsections),
-	 * PARAGRAPHs, SENTENCEs, LISTs and ENUMERATED_LISTs. It cannot contain DOCUMENTs or
+	 * PARAGRAPHs, SENTENCEs and LISTs. It cannot contain DOCUMENTs or
 	 * LIST_ITEMs.</li>
-	 * <li><b>PARAGRAPH</b>: can contain SENTENCEs, LISTs and ENUMERATED_LISTs. It cannot contain
+	 * <li><b>PARAGRAPH</b>: can contain SENTENCEs or LISTs. It cannot contain
 	 * DOCUMENTs, SECTIONs, other PARAGRAPHs or LIST_ITEMs.</li>
 	 * <li><b>SENTENCE</b>: can only contain other forms of
 	 * <code>NLGElement</code>s. It cannot contain DOCUMENTs, SECTIONs,
-	 * PARAGRAPHs, other SENTENCEs, LISTs, ENUMERATED_LISTs or LIST_ITEMs.</li>
+	 * PARAGRAPHs, other SENTENCEs, LISTs or LIST_ITEMs.</li>
 	 * <li><b>LIST</b>: can only contain LIST_ITEMs. It cannot contain
-	 * DOCUMENTs, SECTIONs, PARAGRAPHs, SENTENCEs, other LISTs or ENUMERATED_LISTs.</li>
-	 * <li><b>ENUMERATED_LIST</b>: can only contain LIST_ITEMs. It cannot contain
-	 * DOCUMENTs, SECTIONs, PARAGRAPHs, SENTENCEs, LISTs or other ENUMERATED_LISTs.</li>
-	 * <li><b>LIST_ITEMs</b>: can contain PARAGRAPHs, SENTENCEs, LISTs, ENUMERATED_LISTs or other
+	 * DOCUMENTs, SECTIONs, PARAGRAPHs, SENTENCEs or other LISTs.</li>
+	 * <li><b>LIST_ITEMs</b>: can contain PARAGRAPHs, SENTENCEs, LISTs or other
 	 * forms of <code>NLGElement</code>s. It cannot contain DOCUMENTs, SECTIONs,
 	 * or LIST_ITEMs.</li>
 	 * </ul>
@@ -113,7 +109,7 @@ public enum DocumentCategory implements ElementCategory {
 	 * <p>
 	 * For structuring text, this effectively becomes the test for relevant
 	 * child types affecting the immediate children. For instance, it is
-	 * possible for a DOCUMENT to contain LIST_ITEMs but only if the LIST_ITEMs
+	 * possible for a DOCUMENT to contains LIST_ITEMs but only if the LIST_ITEMs
 	 * are children of LISTs.
 	 * </p>
 	 * 
@@ -133,10 +129,9 @@ public enum DocumentCategory implements ElementCategory {
 	 *    DOCUMENT_PART  ::= SECTION | PARAGRAPH
 	 *    SECTION 		 ::= DOCUMENT_PART*
 	 *    PARAGRAPH 	 ::= PARAPGRAPH_PART*
-	 *    PARAGRAPH_PART ::= SENTENCE | LIST | ENUMERATED_LIST
+	 *    PARAGRAPH_PART ::= SENTENCE | LIST
 	 *    SENTENCE 	 	 ::= &lt;NLGElement&gt;*
 	 *    LIST 			 ::= LIST_ITEM*
-	 *    ENUMERATED_LIST::= LIST_ITEM*
 	 *    LIST_ITEM 	 ::= PARAGRAPH | PARAGRAPH_PART | &lt;NLGElement&gt;
 	 * </pre>
 	 * <p>
@@ -155,29 +150,29 @@ public enum DocumentCategory implements ElementCategory {
 	 */
 	public boolean hasSubPart(ElementCategory elementCategory) {
 		boolean subPart = false;
-		if(elementCategory != null) {
-			if(elementCategory instanceof DocumentCategory) {
-				switch(this){
-				case DOCUMENT :
-					subPart = !(elementCategory.equals(DOCUMENT)) && !(elementCategory.equals(LIST_ITEM));
+		if (elementCategory != null) {
+			if (elementCategory instanceof DocumentCategory) {
+				switch (this) {
+				case DOCUMENT:
+					subPart = !(elementCategory.equals(DOCUMENT) || elementCategory
+							.equals(LIST_ITEM));
+					break;
+					
+				case SECTION:
+					subPart = elementCategory.equals(PARAGRAPH)
+							|| elementCategory.equals(SECTION);
 					break;
 
-				case SECTION :
-					subPart = elementCategory.equals(PARAGRAPH) || elementCategory.equals(SECTION);
+				case PARAGRAPH:
+					subPart = elementCategory.equals(SENTENCE)
+							|| elementCategory.equals(LIST);
 					break;
 
-				case PARAGRAPH :
-					subPart = elementCategory.equals(SENTENCE) || elementCategory.equals(LIST);
-					break;
-
-				case LIST :
+				case LIST:
 					subPart = elementCategory.equals(LIST_ITEM);
 					break;
-				case ENUMERATED_LIST :
-					subPart = elementCategory.equals(LIST_ITEM);
-					break;
 
-				default :
+				default:
 					break;
 				}
 			} else {

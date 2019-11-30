@@ -14,14 +14,10 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 
 package simplenlg.features;
-
-import simplenlg.framework.ElementCategory;
-import simplenlg.framework.LexicalCategory;
-import simplenlg.framework.PhraseCategory;
 
 /**
  * <p>
@@ -154,20 +150,40 @@ public abstract class LexicalFeature {
 	 */
 	public static final String ACRONYMS = "acronyms";
 
-	/*
-	 * <p> This feature is used to list all the possible inflectional variants
-	 * of a word. For example, the word <I>fish</I> can be both <I>uncount</I>
-	 * (plural: <I>fish</I>) and <I>reg</I> (plural: <I>fishes</I>). </p> <table
-	 * border="1"> <tr> <td><b>Feature name</b></td> <td><em>infl</em></td>
-	 * </tr> <tr> <td><b>Expected type</b></td>
-	 * <td><code>List<Inflection><String></code></td> </tr> <tr> <td><b>Created
-	 * by</b></td> <td>Lexicons that support inflectional variants should set
-	 * this feature.</td> </tr> <tr> <td><b>Used by</b></td> <td>No processors
-	 * currently use this feature.</td> </tr> <tr> <td><b>Applies to</b></td>
-	 * <td>Any lexical item.</td> </tr> <tr> <td><b>Default</b></td>
-	 * <td><code>null</code></td> </tr> </table>
+	/**
+	 * <p>
+	 * This feature is used to list all the possible inflectional variants of a
+	 * word. For example, the word <I>fish</I> can be both <I>uncount</I>
+	 * (plural: <I>fish</I>) and <I>reg</I> (plural: <I>fishes</I>).
+	 * </p>
+	 * <table border="1">
+	 * <tr>
+	 * <td><b>Feature name</b></td>
+	 * <td><em>infl</em></td>
+	 * </tr>
+	 * <tr>
+	 * <td><b>Expected type</b></td>
+	 * <td><code>List<String></code></td>
+	 * </tr>
+	 * <tr>
+	 * <td><b>Created by</b></td>
+	 * <td>Lexicons that support inflectional variants should set this feature.</td>
+	 * </tr>
+	 * <tr>
+	 * <td><b>Used by</b></td>
+	 * <td>No processors currently use this feature.</td>
+	 * </tr>
+	 * <tr>
+	 * <td><b>Applies to</b></td>
+	 * <td>Any lexical item.</td>
+	 * </tr>
+	 * <tr>
+	 * <td><b>Default</b></td>
+	 * <td><code>null</code></td>
+	 * </tr>
+	 * </table>
 	 */
-	// public static final String INFLECTIONS = "infl";
+	public static final String INFLECTIONS = "infl";
 
 	/**
 	 * <p>
@@ -181,12 +197,11 @@ public abstract class LexicalFeature {
 	 * </tr>
 	 * <tr>
 	 * <td><b>Expected type</b></td>
-	 * <td><code>Inflection</code></td>
+	 * <td><code>String</code></td>
 	 * </tr>
 	 * <tr>
 	 * <td><b>Created by</b></td>
-	 * <td>Lexicons that support multiple inflectional variants should set this
-	 * feature.</td>
+	 * <td>Lexicons that support multiple inflectional variants should set this feature.</td>
 	 * </tr>
 	 * <tr>
 	 * <td><b>Used by</b></td>
@@ -219,8 +234,7 @@ public abstract class LexicalFeature {
 	 * </tr>
 	 * <tr>
 	 * <td><b>Created by</b></td>
-	 * <td>Lexicons that support multiple spelling variants should set this
-	 * feature.</td>
+	 * <td>Lexicons that support multiple spelling variants should set this feature.</td>
 	 * </tr>
 	 * <tr>
 	 * <td><b>Used by</b></td>
@@ -240,8 +254,7 @@ public abstract class LexicalFeature {
 
 	/**
 	 * <p>
-	 * This feature is used to specify the default spelling variant of a word,
-	 * if it has more than one.
+	 * This feature is used to specify the default spelling variant of a word, if it has more than one.
 	 * </p>
 	 * <table border="1">
 	 * <tr>
@@ -254,8 +267,7 @@ public abstract class LexicalFeature {
 	 * </tr>
 	 * <tr>
 	 * <td><b>Created by</b></td>
-	 * <td>Lexicons that support multiple spelling variants should set this
-	 * feature.</td>
+	 * <td>Lexicons that support multiple spelling variants should set this feature.</td>
 	 * </tr>
 	 * <tr>
 	 * <td><b>Used by</b></td>
@@ -1076,31 +1088,5 @@ public abstract class LexicalFeature {
 	 */
 	private LexicalFeature() {
 		// do nothing
-	}
-
-	/**
-	 * Return those features related to a word's inflection, depending on its
-	 * category, that is, the constants for
-	 * <code>PAST, PAST_PARTICIPLE, PLURAl, PRESENT_PARTICIPLE, PRESENT3S, COMPARATIVE</code>
-	 * or <code>SUPERLATIVE</code>.
-	 * 
-	 * @param cat
-	 *            the category
-	 * @return the inflectional feature names
-	 */
-	public static String[] getInflectionalFeatures(ElementCategory cat) {
-		if (PhraseCategory.NOUN_PHRASE.equals(cat)
-				|| LexicalCategory.NOUN.equals(cat))
-			return new String[] { PLURAL };
-		else if (PhraseCategory.VERB_PHRASE.equals(cat)
-				|| LexicalCategory.VERB.equals(cat))
-			return new String[] { PAST, PAST_PARTICIPLE, PRESENT_PARTICIPLE,
-					PRESENT3S };
-		else if (PhraseCategory.ADJECTIVE_PHRASE.equals(cat)
-				|| LexicalCategory.ADJECTIVE.equals(cat))
-			return new String[] { COMPARATIVE, SUPERLATIVE };
-		else
-			return null;
-
 	}
 }

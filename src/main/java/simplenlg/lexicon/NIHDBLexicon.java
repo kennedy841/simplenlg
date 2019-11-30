@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Saad Mahamood.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.lexicon;
 
@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import simplenlg.features.Inflection;
 import simplenlg.features.LexicalFeature;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
@@ -49,7 +48,7 @@ import simplenlg.framework.WordElement;
 public class NIHDBLexicon extends Lexicon {
 
 	// default DB parameters
-	private static String DB_HSQL_DRIVER = "org.hsqldb.jdbc.JDBCDriver"; // DB driver
+	private static String DB_HSQL_DRIVER = "org.hsqldb.jdbcDriver"; // DB driver
 	private static String DB_HQSL_JDBC = "jdbc:hsqldb:"; // JDBC specifier for
 	// HSQL
 	private static String DB_DEFAULT_USERNAME = "sa"; // DB username
@@ -157,11 +156,11 @@ public class NIHDBLexicon extends Lexicon {
 	 * simplenlg.features.LexicalCategory)
 	 */
 	@Override
-	public synchronized List<WordElement> getWords(String baseForm, LexicalCategory category) {
+	public List<WordElement> getWords(String baseForm, LexicalCategory category) {
 		// get words from DB
 		try {
 			LexAccessApiResult lexResult = lexdb.GetLexRecordsByBase(baseForm,
-					LexAccessApi.B_EXACT);			
+					LexAccessApi.B_EXACT);
 			return getWordsFromLexResult(category, lexResult);
 		} catch (SQLException ex) {
 			System.out.println("Lexical DB error: " + ex.toString());
@@ -176,7 +175,7 @@ public class NIHDBLexicon extends Lexicon {
 	 * @see simplenlg.lexicon.Lexicon#getWordsByID(java.lang.String)
 	 */
 	@Override
-	public synchronized List<WordElement> getWordsByID(String id) {
+	public List<WordElement> getWordsByID(String id) {
 		// get words from DB
 		try {
 			LexAccessApiResult lexResult = lexdb.GetLexRecords(id);
@@ -195,7 +194,7 @@ public class NIHDBLexicon extends Lexicon {
 	 * simplenlg.features.LexicalCategory)
 	 */
 	@Override
-	public synchronized List<WordElement> getWordsFromVariant(String variant,
+	public List<WordElement> getWordsFromVariant(String variant,
 			LexicalCategory category) {
 		// get words from DB
 		try {
@@ -230,15 +229,25 @@ public class NIHDBLexicon extends Lexicon {
 	 * @param record
 	 * @return
 	 */
-	@SuppressWarnings("incomplete-switch")
 	private WordElement makeWord(LexRecord record) {
 		// get basic data
-		String baseForm = record.GetBase();		
+		String baseForm = record.GetBase();
 		LexicalCategory category = getSimplenlgCategory(record);
 		String id = record.GetEui();
 
 		// create word class
-		WordElement wordElement = new WordElement(baseForm, category, id);
+		WordElement wordElement = new WordElement(baseForm, category, id, this);
+
+		// now add inflection info
+		if (keepStandardInflections || !standardInflections(record, category))
+			for (InflVar inflection : record.GetInflVarsAndAgreements()
+					.GetInflValues()) {
+				String simplenlgInflection = getSimplenlgInflection(inflection
+						.GetInflection());
+				if (simplenlgInflection != null)
+					wordElement.setFeature(simplenlgInflection, inflection
+							.GetVar());
+			}
 
 		// now add type information
 		switch (category) {
@@ -256,44 +265,6 @@ public class NIHDBLexicon extends Lexicon {
 			break;
 		// ignore closed class words
 		}
-
-		Inflection defaultInfl = (Inflection) wordElement
-				.getDefaultInflectionalVariant();
-
-		// now add inflected forms
-		// if (keepStandardInflections || !standardInflections(record,
-		// category)) {
-		for (InflVar inflection : record.GetInflVarsAndAgreements()
-				.GetInflValues()) {
-			String simplenlgInflection = getSimplenlgInflection(inflection
-					.GetInflection());
-
-			if (simplenlgInflection != null) {
-				String inflectedForm = inflection.GetVar();
-				Inflection inflType = Inflection.getInflCode(inflection
-						.GetType());
-
-				// store all inflectional variants, except for regular ones
-				// unless explicitly set
-				if (inflType != null
-						&& !(Inflection.REGULAR.equals(inflType) && !this.keepStandardInflections)) {
-					wordElement.addInflectionalVariant(inflType,
-							simplenlgInflection, inflectedForm);
-				}
-
-				// if the infl variant is the default, also set this feature on
-				// the word
-				if (defaultInfl == null
-						|| (defaultInfl.equals(inflType) && !(Inflection.REGULAR
-								.equals(inflType) && !this.keepStandardInflections))) {
-					wordElement.setFeature(simplenlgInflection, inflectedForm);
-				}
-
-				// wordElement
-				// .setFeature(simplenlgInflection, inflection.GetVar());
-			}
-		}
-		// }
 
 		// add acronym info
 		addAcronymInfo(wordElement, record);
@@ -338,7 +309,6 @@ public class NIHDBLexicon extends Lexicon {
 	 *            syntactic category
 	 * @return true if standard (regular) inflection
 	 */
-	@SuppressWarnings({ "unused", "incomplete-switch" })
 	private boolean standardInflections(LexRecord record,
 			LexicalCategory category) {
 		List<String> variants = null;
@@ -522,35 +492,18 @@ public class NIHDBLexicon extends Lexicon {
 		List<String> variants = nounEntry.GetVariants();
 
 		if (!variants.isEmpty()) {
-			List<Inflection> wordVariants = new ArrayList<Inflection>();
+			List<String> wordVariants = new ArrayList<String>();
 
 			for (String v : variants) {
-				int index = v.indexOf("|");
-				String code;
-
-				if (index > -1) {
-					code = v.substring(0, index).toLowerCase().trim();
-
-				} else {
-					code = v.toLowerCase().trim();
-				}
-
-				Inflection infl = Inflection.getInflCode(code);
-
-				if (infl != null) {
-					wordVariants.add(infl);
-					wordElement.addInflectionalVariant(infl);
-				}
+				wordVariants.add(this.getInflCode(v));
 			}
 
 			// if the variants include "reg", this is the default, otherwise
 			// just a random pick
-			Inflection defaultVariant = wordVariants
-					.contains(Inflection.REGULAR)
-					|| wordVariants.isEmpty() ? Inflection.REGULAR
-					: wordVariants.get(0);			
+			String defaultVariant = wordVariants.contains("reg") ? "reg"
+					: wordVariants.get(0);
+			wordElement.setFeature(LexicalFeature.INFLECTIONS, wordVariants);
 			wordElement.setFeature(LexicalFeature.DEFAULT_INFL, defaultVariant);
-			wordElement.setDefaultInflectionalVariant(defaultVariant);
 		}
 
 		// for (String variant : variants) {
@@ -605,40 +558,44 @@ public class NIHDBLexicon extends Lexicon {
 		List<String> variants = verbEntry.GetVariants();
 
 		if (!variants.isEmpty()) {
-			List<Inflection> wordVariants = new ArrayList<Inflection>();
+			List<String> wordVariants = new ArrayList<String>();
 
 			for (String v : variants) {
-				int index = v.indexOf("|");
-				String code;
-				Inflection infl;
-
-				if (index > -1) {
-					code = v.substring(0, index).toLowerCase().trim();
-					infl = Inflection.getInflCode(code);					
-
-				} else {
-					infl = Inflection.getInflCode(v.toLowerCase().trim());
-				}
-
-				if (infl != null) {
-					wordElement.addInflectionalVariant(infl);
-					wordVariants.add(infl);
-				}
+				wordVariants.add(this.getInflCode(v));
 			}
 
 			// if the variants include "reg", this is the default, otherwise
 			// just a random pick
-			Inflection defaultVariant = wordVariants
-					.contains(Inflection.REGULAR)
-					|| wordVariants.isEmpty() ? Inflection.REGULAR
+			String defaultVariant = wordVariants.contains("reg") ? "reg"
 					: wordVariants.get(0);
-//			wordElement.setFeature(LexicalFeature.INFLECTIONS, wordVariants);
-//			wordElement.setFeature(LexicalFeature.DEFAULT_INFL, defaultVariant);
-			wordElement.setDefaultInflectionalVariant(defaultVariant);
+			wordElement.setFeature(LexicalFeature.INFLECTIONS, wordVariants);
+			wordElement.setFeature(LexicalFeature.DEFAULT_INFL, defaultVariant);
 		}
 
 		// ignore (for now) other info in record
+
 		return;
+	}
+
+	/**
+	 * convenience method: parses an NIH inflectional code such as
+	 * "irreg|woman|women" to retrieve the first element, which is the code
+	 * itself.
+	 * 
+	 * @param variant
+	 * @return
+	 */
+	private String getInflCode(String variant) {
+		int index = variant.indexOf("|");
+		String code;
+
+		if (index > -1) {
+			code = variant.substring(0, index);
+		} else {
+			code = variant;
+		}
+
+		return code;
 	}
 
 	/**
@@ -647,7 +604,8 @@ public class NIHDBLexicon extends Lexicon {
 	 * @param list
 	 * @return
 	 */
-	private boolean notEmpty(List<?> list) {
+	@SuppressWarnings("unchecked")
+	private boolean notEmpty(List list) {
 		return list != null && !list.isEmpty();
 	}
 

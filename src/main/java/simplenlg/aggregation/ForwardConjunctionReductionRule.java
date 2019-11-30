@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.aggregation;
 
@@ -29,7 +29,7 @@ import simplenlg.framework.PhraseCategory;
  * <code>s1</code> and <code>s2</code>, this rule elides any constituent in the
  * left periphery of <code>s2</code> which is also in <code>s1</code>. The left
  * periphery in simplenlg is roughly defined as the subjects, front modifiers
- * and cue phrase of an {@link simplenlg.phrasespec.SPhraseSpec}.
+ * and cue phrase of an {@link simplenlg.realiser.SPhraseSpec}.
  * </P>
  * 
  * <P>
@@ -79,7 +79,7 @@ public class ForwardConjunctionReductionRule extends AggregationRule {
 	/**
 	 * Applies forward conjunction reduction to two NLGElements e1 and e2,
 	 * succeeding only if they are clauses (that is, e1.getCategory() ==
-	 * e2.getCategory == {@link simplenlg.framework.PhraseCategory#CLAUSE}) and
+	 * e2.getCategory == {@link PhraseCategory#CLAUSE}) and
 	 * the clauses are not passive.
 	 * 
 	 * @param previous
@@ -109,7 +109,8 @@ public class ForwardConjunctionReductionRule extends AggregationRule {
 			}
 		}
 
-		return success ? this.factory.createCoordinatedPhrase(previous, next)
+		// factory reference changed for getFactory(NLGElement) call by vaudrypl
+		return success ? getFactory(previous).createCoordinatedPhrase(previous, next)
 				: null;
 	}
 

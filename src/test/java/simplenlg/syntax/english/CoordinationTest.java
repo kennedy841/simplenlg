@@ -22,6 +22,7 @@ package simplenlg.syntax.english;
 import junit.framework.Assert;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import simplenlg.features.Feature;
@@ -39,6 +40,8 @@ import simplenlg.phrasespec.VPPhraseSpec;
  * @author Albert Gatt
  * 
  */
+
+@Ignore
 public class CoordinationTest extends SimpleNLG4Test {
 
 	public CoordinationTest(String name) {

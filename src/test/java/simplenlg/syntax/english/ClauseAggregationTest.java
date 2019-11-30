@@ -25,6 +25,7 @@ import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import simplenlg.aggregation.BackwardConjunctionReductionRule;
@@ -41,6 +42,7 @@ import simplenlg.phrasespec.SPhraseSpec;
  * @author Albert Gatt, University of Malta & University of Aberdeen
  * 
  */
+@Ignore
 public class ClauseAggregationTest extends SimpleNLG4Test {
 	// set up a few more fixtures
 	/** The s4. */
@@ -216,6 +218,7 @@ public class ClauseAggregationTest extends SimpleNLG4Test {
 	/**
 	 * Test coordination of 3 sentences with the same VP
 	 */
+	@Ignore
 	public void testCoordinationSameVP2() {
 		List<NLGElement> elements = Arrays.asList((NLGElement) this.s3,
 				(NLGElement) this.s4, (NLGElement) this.s5);

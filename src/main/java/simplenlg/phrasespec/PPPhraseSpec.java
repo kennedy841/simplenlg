@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 
 package simplenlg.phrasespec;
@@ -90,12 +90,42 @@ public class PPPhraseSpec extends PhraseElement {
 	 *
 	 * @param object
 	 */
+	// changed by vaudrypl; code moved to addObject()
 	public void setObject(Object object) {
-		PhraseElement objectPhrase = getFactory().createNounPhrase(object);
-		objectPhrase.setFeature(InternalFeature.DISCOURSE_FUNCTION, DiscourseFunction.OBJECT);
-		addComplement(objectPhrase);
+		clearComplements();
+		addObject(object);
 	}
-	
+	public void addObject(Object object) {
+		// changed by vaudrypl because of changes in createNounPhrase(object)
+		PhraseElement objectPhrase;
+		if (object instanceof PhraseElement) {
+			objectPhrase = (PhraseElement) object;
+		} else {
+			objectPhrase = getFactory().createNounPhrase(object);
+		}
+		
+		objectPhrase.setFeature(InternalFeature.DISCOURSE_FUNCTION, DiscourseFunction.OBJECT);
+		// changed by vaudrypl
+		super.addComplement(objectPhrase);
+		objectPhrase.setParent(this);
+	}
+	// added by vaudrypl
+	@Override
+	public void addComplement(NLGElement newComplement) {
+		addObject(newComplement);
+	}
+	@Override
+	public void addComplement(String newComplement) {
+		addObject(newComplement);
+	}
+	@Override
+	public void setComplement(NLGElement newComplement) {
+		setObject(newComplement);
+	}
+	@Override
+	public void setComplement(String newComplement) {
+		setObject(newComplement);
+	}	
 	
 	/**
 	 * @return object of PP (assume only one)
@@ -108,4 +138,23 @@ public class PPPhraseSpec extends PhraseElement {
 		return null;
 	}
 
+	/**
+	 * Checks if this element must provoke a negation, but with only
+	 * the adverb "ne", in French.
+	 * 
+	 * @return true if the element provokes a negation with only "ne"
+	 * 
+	 * @author vaudrypl
+	 */
+	@Override
+	public boolean checkIfNeOnlyNegation() {
+		boolean returnValue = false;
+		
+		NLGElement object = getObject();
+		if (object != null) {
+			returnValue = object.checkIfNeOnlyNegation();
+		}
+		
+		return returnValue;
+	}
 }

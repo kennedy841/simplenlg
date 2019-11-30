@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.syntax.english;
 
@@ -90,7 +90,6 @@ abstract class NounPhraseHelper {
 						.getPostModifiers(), DiscourseFunction.POST_MODIFIER);
 			}
 		}
-
 		return realisedElement;
 	}
 
@@ -110,8 +109,6 @@ abstract class NounPhraseHelper {
 		NLGElement headElement = phrase.getHead();
 
 		if (headElement != null) {
-			headElement.setFeature(Feature.ELIDED, phrase
-					.getFeature(Feature.ELIDED));
 			headElement.setFeature(LexicalFeature.GENDER, phrase
 					.getFeature(LexicalFeature.GENDER));
 			headElement.setFeature(InternalFeature.ACRONYM, phrase
@@ -173,14 +170,13 @@ abstract class NounPhraseHelper {
 
 		if (specifierElement != null
 				&& !phrase.getFeatureAsBoolean(InternalFeature.RAISED)
-						.booleanValue() && !phrase.getFeatureAsBoolean(Feature.ELIDED).booleanValue()) {
-			if (!specifierElement.isA(LexicalCategory.PRONOUN) && specifierElement.getCategory() != PhraseCategory.NOUN_PHRASE) {
+						.booleanValue()) {
+
+			if (!specifierElement.isA(LexicalCategory.PRONOUN)) {
 				specifierElement.setFeature(Feature.NUMBER, phrase
 						.getFeature(Feature.NUMBER));
 			}
-			
 			NLGElement currentElement = parent.realise(specifierElement);
-			
 			if (currentElement != null) {
 				currentElement.setFeature(InternalFeature.DISCOURSE_FUNCTION,
 						DiscourseFunction.SPECIFIER);
@@ -306,7 +302,6 @@ abstract class NounPhraseHelper {
 		} else if (element instanceof PhraseElement) {
 			head = getHeadWordElement(((PhraseElement) element).getHead());
 		}
-				
 		return head;
 	}
 
@@ -348,9 +343,7 @@ abstract class NounPhraseHelper {
 		
 		if (proElement instanceof WordElement) {
 			element = new InflectedWordElement((WordElement) proElement);
-			element.setFeature(LexicalFeature.GENDER, ((WordElement) proElement).getFeature(LexicalFeature.GENDER));	
-			// Ehud - also copy over person
-			element.setFeature(Feature.PERSON, ((WordElement) proElement).getFeature(Feature.PERSON));	
+			element.setFeature(LexicalFeature.GENDER, ((WordElement) proElement).getFeature(LexicalFeature.GENDER));			
 		} else {
 			element = proElement;
 		}

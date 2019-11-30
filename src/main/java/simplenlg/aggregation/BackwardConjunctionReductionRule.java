@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.aggregation;
 
@@ -68,7 +68,7 @@ public class BackwardConjunctionReductionRule extends AggregationRule {
 	/**
 	 * Applies backward conjunction reduction to two NLGElements e1 and e2,
 	 * succeeding only if they are clauses (that is, e1.getCategory() ==
-	 * e2.getCategory == {@link simplenlg.framework.PhraseCategory#CLAUSE}).
+	 * e2.getCategory == {@link PhraseCategory#CLAUSE}).
 	 * 
 	 * @param previous
 	 *            the first phrase
@@ -96,7 +96,8 @@ public class BackwardConjunctionReductionRule extends AggregationRule {
 			}
 		}
 
-		return success ? this.factory.createCoordinatedPhrase(previous, next)
+		// factory reference changed for getFactory(NLGElement) call by vaudrypl
+		return success ? getFactory(previous).createCoordinatedPhrase(previous, next)
 				: null;
 	}
 

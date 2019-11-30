@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 
 package simplenlg.phrasespec;
@@ -84,5 +84,17 @@ public class AdvPhraseSpec extends PhraseElement {
 	
 	// inherit usual modifier routines
 	
-
+	/**
+	 * Adds a new pre-modifier to the phrase element.
+	 * 
+	 * @param newPreModifier
+	 *            the new pre-modifier as a <code>String</code>. It is used to
+	 *            create a <code>StringElement</code>.
+	 */
+	@Override // overridding method added by vaudrypl
+	public void addPreModifier(String newPreModifier) {
+		NLGElement newElement =
+			getFactory().createNLGElement(newPreModifier, LexicalCategory.ADVERB);
+		addPreModifier(newElement);
+	}
 }

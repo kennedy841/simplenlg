@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.syntax.english;
 
@@ -60,8 +60,9 @@ abstract class CoordinatedPhraseHelper {
 			realisedElement = new ListElement();
 			PhraseHelper.realiseList(parent, realisedElement, phrase
 					.getPreModifiers(), DiscourseFunction.PRE_MODIFIER);
-
-			CoordinatedPhraseElement coordinated = new CoordinatedPhraseElement();
+			
+			// vaudrypl added argument to constructor
+			CoordinatedPhraseElement coordinated = new CoordinatedPhraseElement(phrase.getFactory());
 
 			List<NLGElement> children = phrase.getChildren();
 			String conjunction = phrase.getFeatureAsString(Feature.CONJUNCTION);
@@ -72,9 +73,9 @@ abstract class CoordinatedPhraseHelper {
 			InflectedWordElement conjunctionElement = null;
 
 			if (children != null && children.size() > 0) {
-				
 				if (phrase.getFeatureAsBoolean(Feature.RAISE_SPECIFIER)
 						.booleanValue()) {
+
 					raiseSpecifier(children);
 				}
 
@@ -104,16 +105,12 @@ abstract class CoordinatedPhraseHelper {
 												.getFeature(Feature.SUPRESSED_COMPLEMENTISER));
 					}
 
-					//skip conjunction if it's null or empty string
-					if (conjunction != null && conjunction.length() > 0) {
-						conjunctionElement = new InflectedWordElement(
-								conjunction, LexicalCategory.CONJUNCTION);
-						conjunctionElement.setFeature(
-								InternalFeature.DISCOURSE_FUNCTION,
-								DiscourseFunction.CONJUNCTION);
-						coordinated.addCoordinate(conjunctionElement);
-					}
-
+					conjunctionElement = new InflectedWordElement(conjunction,
+							LexicalCategory.CONJUNCTION);
+					conjunctionElement.setFeature(
+							InternalFeature.DISCOURSE_FUNCTION,
+							DiscourseFunction.CONJUNCTION);
+					coordinated.addCoordinate(conjunctionElement);
 					coordinated.addCoordinate(parent.realise(child));
 				}
 				realisedElement.addComponent(coordinated);
@@ -159,13 +156,13 @@ abstract class CoordinatedPhraseHelper {
 			child.setFeature(Feature.NUMBER, phrase.getFeature(Feature.NUMBER));
 		}
 		if (phrase.hasFeature(Feature.TENSE)) {
-			child.setFeature(Feature.TENSE, phrase.getFeature(Feature.TENSE));
+			child.setTense(phrase.getTense());
 		}
 		if (phrase.hasFeature(Feature.PERSON)) {
 			child.setFeature(Feature.PERSON, phrase.getFeature(Feature.PERSON));
 		}
 		if (phrase.hasFeature(Feature.NEGATED)) {
-			child.setFeature(Feature.NEGATED, phrase.getFeature(Feature.NEGATED));
+			child.setNegated(phrase.isNegated());
 		}
 		if (phrase.hasFeature(Feature.MODAL)) {
 			child.setFeature(Feature.MODAL, phrase.getFeature(Feature.MODAL));

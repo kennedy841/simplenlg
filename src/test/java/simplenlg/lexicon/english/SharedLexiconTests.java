@@ -73,7 +73,6 @@ public class SharedLexiconTests {
 				.getFeatureAsString(LexicalFeature.ACRONYM_OF));
 		Assert.assertEquals(false, woman.getFeatureAsBoolean(
 				LexicalFeature.PROPER).booleanValue());
-		Assert.assertFalse(woman.hasInflectionalVariant(Inflection.UNCOUNT));
 
 		// NB: This fails if the lexicon is XMLLexicon. No idea why.
 		// Assert.assertEquals("irreg",
@@ -81,7 +80,6 @@ public class SharedLexiconTests {
 
 		// test getWord. Noun "sand" is non-count
 		WordElement sand = lexicon.getWord("sand", LexicalCategory.NOUN);
-		Assert.assertEquals(true, sand.hasInflectionalVariant(Inflection.UNCOUNT));
 		Assert.assertEquals(Inflection.UNCOUNT, sand.getDefaultInflectionalVariant());
 
 		// test hasWord

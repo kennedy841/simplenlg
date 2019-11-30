@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.aggregation;
 
@@ -25,6 +25,7 @@ import simplenlg.features.InternalFeature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.PhraseCategory;
+import simplenlg.lexicon.Lexicon;
 
 /**
  * Implementation of a clausal coordination rule. The rule performs the
@@ -65,7 +66,7 @@ public class ClauseCoordinationRule extends AggregationRule {
 	/**
 	 * Applies aggregation to two NLGElements e1 and e2, succeeding only if they
 	 * are clauses (that is, e1.getCategory() == e2.getCategory ==
-	 * {@link simplenlg.framework.PhraseCategory#CLAUSE}).
+	 * {@link PhraseCategory#CLAUSE}).
 	 */
 	@Override
 	public NLGElement apply(NLGElement previous, NLGElement next) {
@@ -84,7 +85,8 @@ public class ClauseCoordinationRule extends AggregationRule {
 			} else if (PhraseChecker.sameFrontMods(previous, next)
 					&& PhraseChecker.sameSubjects(previous, next)
 					&& PhraseChecker.samePostMods(previous, next)) {
-				aggregated = this.factory.createClause();
+				// factory reference changed for getFactory(NLGElement) call by vaudrypl
+				aggregated = getFactory(previous).createClause();
 				aggregated.setFeature(InternalFeature.SUBJECTS, previous
 						.getFeatureAsElementList(InternalFeature.SUBJECTS));
 				aggregated.setFeature(InternalFeature.FRONT_MODIFIERS, previous
@@ -106,7 +108,8 @@ public class ClauseCoordinationRule extends AggregationRule {
 
 					NLGElement vp1 = previous
 							.getFeatureAsElement(InternalFeature.VERB_PHRASE);
-					vp = this.factory.createVerbPhrase();
+					// factory reference changed for getFactory(NLGElement) call by vaudrypl
+					vp = getFactory(previous).createVerbPhrase();
 					vp.setFeature(InternalFeature.HEAD, vp1
 							.getFeatureAsElement(InternalFeature.HEAD));
 					vp
@@ -131,7 +134,8 @@ public class ClauseCoordinationRule extends AggregationRule {
 							.getFeatureAsElement(InternalFeature.VERB_PHRASE);
 					NLGElement vp2 = next
 							.getFeatureAsElement(InternalFeature.VERB_PHRASE);
-					vp = this.factory.createCoordinatedPhrase(vp1, vp2);
+					// factory reference changed for getFactory(NLGElement) call by vaudrypl
+					vp = getFactory(previous).createCoordinatedPhrase(vp1, vp2);
 
 					// case 2.3: expletive subjects
 				}
@@ -143,13 +147,15 @@ public class ClauseCoordinationRule extends AggregationRule {
 			} else if (PhraseChecker.sameFrontMods(previous, next)
 					&& PhraseChecker.sameVP(previous, next)
 					&& PhraseChecker.samePostMods(previous, next)) {
-				aggregated = this.factory.createClause();
+				// factory reference changed for getFactory(NLGElement) call by vaudrypl
+				aggregated = getFactory(previous).createClause();
 				aggregated
 						.setFeature(
 								InternalFeature.FRONT_MODIFIERS,
 								previous
 										.getFeatureAsElementList(InternalFeature.FRONT_MODIFIERS));
-				CoordinatedPhraseElement subjects = this.factory
+				// factory reference changed for getFactory(NLGElement) call by vaudrypl
+				CoordinatedPhraseElement subjects = getFactory(previous)
 						.createCoordinatedPhrase();
 				subjects.setCategory(PhraseCategory.NOUN_PHRASE);
 				List<NLGElement> allSubjects = previous
@@ -158,7 +164,18 @@ public class ClauseCoordinationRule extends AggregationRule {
 						.getFeatureAsElementList(InternalFeature.SUBJECTS));
 
 				for (NLGElement subj : allSubjects) {
-					subjects.addCoordinate(subj);
+					// test for coordinated phrase added by vaudrypl
+					Lexicon lexicon = subj.getLexicon();
+					if (subj instanceof CoordinatedPhraseElement
+							&& ((CoordinatedPhraseElement)subj).getConjunction()
+								.equals(lexicon.getAdditionCoordConjunction()) ) {
+						for (NLGElement subjCoordinate : ((CoordinatedPhraseElement)subj).getChildren() ) {
+							subjects.addCoordinate(subjCoordinate);
+						}
+						
+					} else {
+						subjects.addCoordinate(subj);
+					}
 				}
 
 				aggregated.setFeature(InternalFeature.SUBJECTS, subjects);

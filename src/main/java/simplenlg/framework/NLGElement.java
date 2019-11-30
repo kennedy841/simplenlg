@@ -14,21 +14,26 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.framework;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
 
+import simplenlg.features.DiscourseFunction;
 import simplenlg.features.Feature;
 import simplenlg.features.NumberAgreement;
 import simplenlg.features.Tense;
+import simplenlg.features.french.FrenchLexicalFeature;
+import simplenlg.lexicon.Lexicon;
+import simplenlg.orthography.OrthographyHelperInterface;
 
 /**
  * <p>
@@ -205,10 +210,18 @@ public abstract class NLGElement {
 	 *         taken by calling the object's <code>toString()</code> method.
 	 */
 	public String getFeatureAsString(String featureName) {
-		Object value = getFeature(featureName);
+		Object value = this.features.get(featureName);
 		String stringValue = null;
 
-		if (value != null) {
+		// added by vaudrypl
+		if (value instanceof StringElement) {
+			stringValue = ((StringElement)value).getRealisation();
+		} else if (value instanceof WordElement) {
+			stringValue = ((WordElement)value).getBaseForm();
+		} else if (value instanceof InflectedWordElement) {
+			stringValue = ((InflectedWordElement)value).getBaseForm();
+			
+		} else if (value != null) {
 			stringValue = value.toString();
 		}
 		return stringValue;
@@ -232,7 +245,7 @@ public abstract class NLGElement {
 	public List<NLGElement> getFeatureAsElementList(String featureName) {
 		List<NLGElement> list = new ArrayList<NLGElement>();
 
-		Object value = getFeature(featureName);
+		Object value = this.features.get(featureName);
 		if (value instanceof NLGElement) {
 			list.add((NLGElement) value);
 		} else if (value instanceof Collection<?>) {
@@ -246,41 +259,6 @@ public abstract class NLGElement {
 			}
 		}
 		return list;
-	}
-	
-	/**
-	 * <p>
-	 * Retrieves the value of the feature as a list of java objects. If the feature
-	 * is a single element, the list contains only this element.
-	 * If the feature is a <code>Collection</code> each object in the collection is
-	 * returned in the list.
-	 * </p>
-	 * <p>
-	 * If the feature does not exist then an empty list is returned.
-	 * </p>
-	 * 
-	 * @param featureName
-	 *            the name of the feature.
-	 * @return the <code>List</code> of <code>Object</code>s
-	 */
-	public List<Object> getFeatureAsList(String featureName) {
-		List<Object> values = new ArrayList<Object>();
-		Object value = getFeature(featureName);
-		
-		if (value != null) {
-			if (value instanceof Collection<?>) {
-				Iterator<?> iterator = ((Collection<?>) value).iterator();
-				Object nextObject = null;
-				while (iterator.hasNext()) {
-					nextObject = iterator.next();
-					values.add(nextObject);
-				}
-			} else {
-				values.add(value);
-			}
-		}
-		
-		return values;
 	}
 
 	/**
@@ -301,7 +279,7 @@ public abstract class NLGElement {
 	 */
 	public List<String> getFeatureAsStringList(String featureName) {
 		List<String> values = new ArrayList<String>();
-		Object value = getFeature(featureName);
+		Object value = this.features.get(featureName);
 
 		if (value != null) {
 			if (value instanceof Collection<?>) {
@@ -331,7 +309,7 @@ public abstract class NLGElement {
 	 *         values. Any other type will return <code>null</code>.
 	 */
 	public Integer getFeatureAsInteger(String featureName) {
-		Object value = getFeature(featureName);
+		Object value = this.features.get(featureName);
 		Integer intValue = null;
 		if (value instanceof Integer) {
 			intValue = (Integer) value;
@@ -359,7 +337,7 @@ public abstract class NLGElement {
 	 *         other type will return <code>null</code>.
 	 */
 	public Long getFeatureAsLong(String featureName) {
-		Object value = getFeature(featureName);
+		Object value = this.features.get(featureName);
 		Long longValue = null;
 		if (value instanceof Long) {
 			longValue = (Long) value;
@@ -387,7 +365,7 @@ public abstract class NLGElement {
 	 *         Any other type will return <code>null</code>.
 	 */
 	public Float getFeatureAsFloat(String featureName) {
-		Object value = getFeature(featureName);
+		Object value = this.features.get(featureName);
 		Float floatValue = null;
 		if (value instanceof Float) {
 			floatValue = (Float) value;
@@ -415,7 +393,7 @@ public abstract class NLGElement {
 	 *         Any other type will return <code>null</code>.
 	 */
 	public Double getFeatureAsDouble(String featureName) {
-		Object value = getFeature(featureName);
+		Object value = this.features.get(featureName);
 		Double doubleValue = null;
 		if (value instanceof Double) {
 			doubleValue = (Double) value;
@@ -442,13 +420,11 @@ public abstract class NLGElement {
 	 *         non-Boolean type will return <code>Boolean.FALSE</code>.
 	 */
 	public Boolean getFeatureAsBoolean(String featureName) {
-		Object value = getFeature(featureName);
+		Object value = this.features.get(featureName);
 		Boolean boolValue = Boolean.FALSE;
-		
 		if (value instanceof Boolean) {
 			boolValue = (Boolean) value;
 		}
-		
 		return boolValue;
 	}
 
@@ -463,7 +439,7 @@ public abstract class NLGElement {
 	 * @return the <code>NLGElement</code>.
 	 */
 	public NLGElement getFeatureAsElement(String featureName) {
-		Object value = getFeature(featureName);
+		Object value = this.features.get(featureName);
 		NLGElement elementValue = null;
 
 		if (value instanceof NLGElement) {
@@ -485,6 +461,7 @@ public abstract class NLGElement {
 
 	/**
 	 * Checks the feature map to see if the named feature is present in the map.
+	 * Modified by vaudrypl to return false if the value of the feature is null.
 	 * 
 	 * @param featureName
 	 *            the name of the feature to look for.
@@ -492,8 +469,12 @@ public abstract class NLGElement {
 	 *         otherwise.
 	 */
 	public boolean hasFeature(String featureName) {
-		return featureName != null ? this.features.containsKey(featureName)
-				: false;
+		if (featureName != null &&  this.features.containsKey(featureName)
+				&&  this.features.get(featureName) != null) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 	/**
@@ -766,11 +747,42 @@ public abstract class NLGElement {
 	}
 
 	/**
+	 * @return the lexicon
+	 * @author vaudrypl
+	 */
+	public Lexicon getLexicon() {
+		Lexicon lexicon = null;
+		
+		if (factory != null) lexicon = factory.getLexicon();
+		
+		return lexicon;
+	}
+	
+	/**
+	 * @return the Language of the NLGFactory of this NLGElement
+	 *         Language.DEFAULT_LANGUAGE if factory is null
+	 * @author vaudrypl
+	 */
+	public Language getLanguage() {
+		Language language = null;
+
+		NLGFactory factory = getFactory();
+		if (factory != null) language = factory.getLanguage();
+		else language = Language.DEFAULT_LANGUAGE;
+
+		return language;
+	}
+
+	/**
 	 * @param factory
 	 *            the NLG factory to set
 	 */
 	public void setFactory(NLGFactory factory) {
 		this.factory = factory;
+		// added by vaudrypl
+		if (factory == null) {
+			this.factory = new NLGFactory();
+		}
 	}
 
 	/**
@@ -790,4 +802,347 @@ public abstract class NLGElement {
 		return eq;
 	}
 
+	/**
+	 * Realisation method for the syntax stage.
+	 * To be overridden by subclasses.
+	 * based on english SyntaxProcessor
+	 * 
+	 * @return syntactically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseSyntax()
+	{
+		if (getFeatureAsBoolean(Feature.ELIDED).booleanValue()) {
+			return null;
+		}
+		else return this;
+	}
+
+	/**
+	 * Realisation method of Lists for the syntax stage.
+	 * based on english SyntaxProcessor
+	 * 
+	 * @return List of morphologically realised forms
+	 * @author vaudrypl
+	 */
+	public List<NLGElement> realiseSyntax(List<NLGElement> elements) {
+		List<NLGElement> realisedList = new ArrayList<NLGElement>();
+		NLGElement childRealisation = null;
+
+		if (elements != null) {
+			for (NLGElement eachElement : elements) {
+				if (eachElement != null) {
+					childRealisation = eachElement.realiseSyntax();
+					if (childRealisation != null) {
+						if (childRealisation instanceof ListElement) {
+							realisedList
+									.addAll(((ListElement) childRealisation)
+											.getChildren());
+						} else {
+							realisedList.add(childRealisation);
+						}
+					}
+				}
+			}
+		}
+		return realisedList;
+	}
+
+	/**
+	 * Realisation method for the morphology stage.
+	 * To be overridden by subclasses.
+	 * based on english MorphologyProcessor
+	 * 
+	 * @return morphologically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseMorphology()
+	{
+		return this;
+	}
+
+	/**
+	 * Realisation method of Lists for the morphology stage.
+	 * based on english MorphologyProcessor
+	 * 
+	 * @return List of morphologically realised forms
+	 * @author vaudrypl
+	 */
+	public List<NLGElement> realiseMorphology(List<NLGElement> elements) {
+		List<NLGElement> realisedElements = new ArrayList<NLGElement>();
+		NLGElement currentElement = null;
+
+		if (elements != null) {
+			for (NLGElement eachElement : elements) {
+				currentElement = eachElement.realiseMorphology();
+				if (currentElement != null) {
+					realisedElements.add(currentElement);
+				}
+			}
+		}
+		return realisedElements;
+	}
+
+	/**
+	 * Realisation method for the morphophonology stage.
+	 * To be overridden by subclasses.
+	 * 
+	 * @return morphophonologically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseMorphophonology()
+	{
+		return realiseMorphophonology(null);
+	}
+
+	/**
+	 * Realisation method for the morphophonology stage.
+	 * To be overridden by subclasses.
+	 * 
+	 * @param nextElement	ignored by default
+	 * @return morphophonologically realised form
+	 * @author vaudrypl
+	 */
+	protected NLGElement realiseMorphophonology(NLGElement nextElement)
+	{
+		// Does the morphophonology on each element and on each
+		// pair of adjacent elements, between their rightmost and lefmost
+		// elements.
+		List<NLGElement> childrenList = getChildren();
+		int nbElements = childrenList.size();
+		if (nbElements > 0) {
+			NLGElement current = childrenList.get(0), next;
+			current.realiseMorphophonology();
+			for (int index = 1; index < nbElements; index++) {
+				next = childrenList.get(index);
+				next.realiseMorphophonology();
+				StringElement rightCurrent = current.getRightMostStringElement();
+				if (rightCurrent != null) {
+					rightCurrent.realiseMorphophonology( next.getLeftMostStringElement() );
+				}
+				current = next;
+			}
+		}
+		return this;
+	}
+	
+	/**
+	 * 
+	 * @return The leftmost StringElement in the tree of its children.
+	 *         If it doesn't have children :
+	 *         Returns the element itself if it is a StringElement,
+	 *         returns null otherwise.
+	 *         
+	 *         See overridden version in StringElement.
+	 *         
+	 * @author vaudrypl
+	 */
+	public StringElement getLeftMostStringElement()
+	{
+		List<NLGElement> childrenList = getChildren();
+		if (childrenList == null) return null;
+
+		// looking for a StringElement (non null), beginning with leftmost child
+		StringElement leftmost = null;
+		int size = childrenList.size();
+		for (int index = 0; leftmost == null && index < size; index++) {
+			leftmost = childrenList.get(index).getLeftMostStringElement();
+		}
+		return leftmost;
+	}
+
+	/**
+	 * 
+	 * @return The rightmost StringElement in the tree of its children.
+	 *         If it doesn't have children :
+	 *         Returns the element itself if it is a StringElement,
+	 *         returns null otherwise.
+	 *         
+	 *         See overridden version in StringElement.
+	 *         
+	 * @author vaudrypl
+	 */
+	public StringElement getRightMostStringElement()
+	{
+		List<NLGElement> childrenList = getChildren();
+		if (childrenList == null) return null;
+
+		// looking for a StringElement (non null), beginning with rightmost child
+		StringElement rightmost = null;
+		for (int index = childrenList.size() - 1; rightmost == null && index >= 0; index--) {
+			rightmost = childrenList.get(index).getRightMostStringElement();
+		}
+		return rightmost;
+	}
+	
+	/**
+	 * 
+	 * @return The rightmost terminal element (InflectedWordElement or StringElement)
+	 *         in the tree of its children.
+	 *         If it doesn't have children :
+	 *         Returns the element itself if it is a terminal element,
+	 *         returns null otherwise.
+	 *         
+	 *         See overridden versions in InflectedWordElement and StringElement.
+	 *         
+	 * @author vaudrypl
+	 */
+	public NLGElement getRightMostTerminalElement()
+	{
+		List<NLGElement> childrenList = getChildren();
+		if (childrenList == null) return null;
+
+		// looking for a terminal element (non null), beginning with rightmost child
+		NLGElement rightmost = null;
+		for (int index = childrenList.size() - 1; rightmost == null && index >= 0; index--) {
+			rightmost = childrenList.get(index).getRightMostTerminalElement();
+		}
+		return rightmost;
+	}
+	
+	/**
+	 * Realisation method for the orthography stage.
+	 * To be overridden by subclasses.
+	 * based on english OrthographyProcessor
+	 * 
+	 * @return orthographically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseOrthography()
+	{
+		return this;
+	}
+
+	/**
+	 * Realisation method of Lists for the orthography stage.
+	 * based on english OrthographyProcessor
+	 * 
+	 * @return List of orthographically realised forms
+	 * @author vaudrypl
+	 */
+	public List<NLGElement> realiseOrthography(List<NLGElement> elements) {
+		List<NLGElement> realisedList = new ArrayList<NLGElement>();
+
+		if (elements != null && elements.size() > 0) {
+			for (NLGElement eachElement : elements) {
+				if (eachElement instanceof DocumentElement) {
+					realisedList.add(eachElement.realiseOrthography());
+				} else {
+					realisedList.add(eachElement);
+				}
+			}
+		}
+		return realisedList;
+	}
+
+	// Morphology rule sets used by realiseMorphology() to inflect the word
+	// instantiated by getMorphologyRuleSet(Language language)
+	private static Map<Language, OrthographyHelperInterface> orthographyHelpers = null; 
+
+	/**
+	 * @return the orthography helper to be used for this element
+	 * @author vaudrypl
+	 */
+	public OrthographyHelperInterface getOrthographyHelper()
+	{
+		return getOrthographyHelper( getLanguage() );
+	}
+	
+	/**
+	 * This static method returns the morphology rule set corresponding to
+	 * a particular language and instantiates it if necessary.
+	 * 
+	 * @param language
+	 * @return the morphology rule set to be used for this language
+	 * @author vaudrypl
+	 */
+	public static OrthographyHelperInterface getOrthographyHelper(Language language)
+	{
+		if (orthographyHelpers == null) {
+			orthographyHelpers =
+				new EnumMap<Language,OrthographyHelperInterface>(Language.class); 
+		}
+		OrthographyHelperInterface orthographyHelper = orthographyHelpers.get(language);
+		if (orthographyHelper == null) {
+			switch (language) {
+			case ENGLISH:
+				orthographyHelper = new simplenlg.orthography.english.OrthographyHelper();
+				break;
+			case FRENCH:
+				orthographyHelper = new simplenlg.orthography.french.OrthographyHelper();
+				break;
+			//CRI
+			case ITALIAN:
+				orthographyHelper = new simplenlg.orthography.italian.OrthographyHelper();
+				break;
+			}
+			orthographyHelpers.put(language, orthographyHelper);
+		}
+		return orthographyHelper;
+	}
+
+	/**
+	 * @param elementList	a list of NLGElements
+	 * @return 				the number of words in the element list
+	 * @author vaudrypl
+	 */
+	public static int countWords(List<NLGElement> elementList) {
+		int wordCount = 0;
+		
+		if (elementList != null) {
+			for (NLGElement current : elementList) {
+				if (current != null) wordCount += current.countWords();
+			}
+		}
+		
+		return wordCount;
+	}
+
+	/**
+	 * @return 				the number of words in the element
+	 * @author vaudrypl
+	 */
+	public int countWords() {
+		int wordCount = 0;
+		
+		if (!getFeatureAsBoolean(Feature.ELIDED)) {
+			ElementCategory category = getCategory();
+			if (category instanceof LexicalCategory) wordCount = 1;
+			else if (category == PhraseCategory.CANNED_TEXT) {
+				String realisation = getRealisation();
+				if (realisation != null) {
+					wordCount = realisation.split(" |'").length;
+				}
+			} else {
+				wordCount = countWords(getChildren());
+			}
+		}
+		
+		return wordCount;
+	}
+
+	/**
+	 * Checks if this element must provoke a negation, but with only
+	 * the adverb "ne", in French. See overridden versions in subclasses.
+	 * 
+	 * @return true if the element provokes a negation with only "ne"
+	 * 
+	 * @author vaudrypl
+	 */
+	public boolean checkIfNeOnlyNegation() {
+		return getFeatureAsBoolean(FrenchLexicalFeature.NE_ONLY_NEGATION);
+	}
+	
+	/**
+	 * Overridden in SPhraseSpec. Always returns false for other NLGElement. 
+	 * 
+	 * Tests if the element has a phrase that has been marked to be realised
+	 * as a relative pronoun and that has the given discourse function.
+	 * 
+	 * @param function
+	 * @return false in PhraseElement
+	 */
+	public boolean hasRelativePhrase(DiscourseFunction function) {
+		return false;
+	}
 }

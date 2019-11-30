@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.aggregation;
 
@@ -93,6 +93,7 @@ public class Aggregator extends NLGModule {
 	 * Apply aggregation to a single phrase. This will only work if the phrase
 	 * is a coordinated phrase, whose children can be further aggregated.
 	 * 
+	 * @see {@link AggregationRule#apply(NLGElement)}
 	 */
 	@Override
 	public NLGElement realise(NLGElement element) {

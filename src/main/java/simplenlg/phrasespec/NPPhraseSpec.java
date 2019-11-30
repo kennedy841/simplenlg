@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 
 package simplenlg.phrasespec;
@@ -25,13 +25,13 @@ import simplenlg.features.Gender;
 import simplenlg.features.InternalFeature;
 import simplenlg.features.LexicalFeature;
 import simplenlg.features.Person;
-import simplenlg.framework.InflectedWordElement;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.PhraseCategory;
 import simplenlg.framework.PhraseElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.framework.WordElement;
+import simplenlg.lexicon.Lexicon;
 
 /**
  * <p>
@@ -79,6 +79,20 @@ public class NPPhraseSpec extends PhraseElement {
 	public NPPhraseSpec(NLGFactory phraseFactory) {
 		super(PhraseCategory.NOUN_PHRASE);
 		this.setFactory(phraseFactory);
+	}
+	
+	/**
+	 * Copy constructor
+	 * @param original
+	 * @author vaudrypl
+	 */
+	public NPPhraseSpec(NPPhraseSpec original) {
+		super(PhraseCategory.NOUN_PHRASE);
+		this.setFactory(original.getFactory());
+		this.setParent(original.getParent());
+		for(String feature : original.getAllFeatureNames()) {
+			setFeature(feature, original.getFeature(feature));
+		}
 	}
 
 	/*
@@ -128,8 +142,9 @@ public class NPPhraseSpec extends PhraseElement {
 
 			setFeature(LexicalFeature.GENDER, nounElement
 					.getFeature(LexicalFeature.GENDER));
-		} else {
-			setFeature(LexicalFeature.GENDER, Gender.NEUTER);
+		// commented out by vaudrypl to make french new nouns work
+//		} else {
+//			setFeature(LexicalFeature.GENDER, Gender.NEUTER);
 		}
 
 		if (nounElement != null
@@ -137,6 +152,20 @@ public class NPPhraseSpec extends PhraseElement {
 
 			setFeature(LexicalFeature.EXPLETIVE_SUBJECT, nounElement
 					.getFeature(LexicalFeature.EXPLETIVE_SUBJECT));
+		}
+
+		// added by vaudrypl
+		if (nounElement != null
+				&& nounElement.getFeatureAsBoolean(LexicalFeature.REFLEXIVE)) {
+			setFeature(LexicalFeature.REFLEXIVE, true);
+		} else {
+			setFeature(LexicalFeature.REFLEXIVE, false);
+		}
+		if (nounElement != null
+				&& nounElement.getFeatureAsBoolean(LexicalFeature.PROPER)) {
+			setFeature(LexicalFeature.PROPER, true);
+		} else {
+			setFeature(LexicalFeature.PROPER, false);
 		}
 
 		setFeature(Feature.ADJECTIVE_ORDERING, true);
@@ -154,29 +183,26 @@ public class NPPhraseSpec extends PhraseElement {
 	}
 
 	/**
+	 * Sets the pronoun (head) of a noun phrase.
+	 * Removes any specifier by default.
+	 * 
+	 * @param noun
+	 * 
+	 * @author vaudrypl
+	 */
+	public void setPronoun(Object pronoun) {
+		NLGElement pronounElement = getFactory().createNLGElement(pronoun,
+				LexicalCategory.PRONOUN);
+		setHead(pronounElement);
+	}
+
+	/**
 	 * @return noun (head) of noun phrase
 	 */
 	public NLGElement getNoun() {
 		return getHead();
 	}
 
-	
-	/**
-	 * setDeterminer - Convenience method for when a person tries to set 
-	 *                 a determiner (e.g. "the") to a NPPhraseSpec.
-	 */
-	public void setDeterminer(Object determiner) {
-		setSpecifier(determiner);
-	}
-	
-	/**
-	 * getDeterminer - Convenience method for when a person tries to get a
-	 *                 determiner (e.g. "the") from a NPPhraseSpec.
-	 */
-	public NLGElement getDeterminer() {
-		return getSpecifier();
-	}
-	
 	/**
 	 * sets the specifier of a noun phrase. Can be determiner (eg "the"),
 	 * possessive (eg, "John's")
@@ -184,22 +210,42 @@ public class NPPhraseSpec extends PhraseElement {
 	 * @param specifier
 	 */
 	public void setSpecifier(Object specifier) {
+		NLGElement specifierElement;
 		if (specifier instanceof NLGElement) {
-			setFeature(InternalFeature.SPECIFIER, specifier);
-			((NLGElement) specifier).setFeature(
-					InternalFeature.DISCOURSE_FUNCTION,
-					DiscourseFunction.SPECIFIER);
+			specifierElement = (NLGElement) specifier;
 		} else {
 			// create specifier as word (assume determiner)
-			NLGElement specifierElement = getFactory().createWord(specifier,
+			specifierElement = getFactory().createWord(specifier,
 					LexicalCategory.DETERMINER);
+		}
 
-			// set specifier feature
-			if (specifierElement != null) {
-				setFeature(InternalFeature.SPECIFIER, specifierElement);
-				specifierElement.setFeature(InternalFeature.DISCOURSE_FUNCTION,
-						DiscourseFunction.SPECIFIER);
+		// set specifier feature
+		setFeature(InternalFeature.SPECIFIER, specifierElement);
+		if (specifierElement != null) {
+			specifierElement.setFeature(InternalFeature.DISCOURSE_FUNCTION,
+					DiscourseFunction.SPECIFIER);
+			
+			// added by vaudrypl
+			specifierElement.setParent(this);
+			NLGElement head = getHead();
+			if (head instanceof WordElement && head.isA(LexicalCategory.PRONOUN)) {
+				String baseForm = ((WordElement)head).getBaseForm();
+				head = getLexicon().lookupWord(baseForm, LexicalCategory.NOUN);
+				setNoun(head);
 			}
+			
+			if (specifierElement.hasFeature(Feature.NUMBER)) {
+				setFeature(Feature.NUMBER, specifierElement.getFeature(Feature.NUMBER));
+			}
+			//Cristina B. - not here...in realising syntax we propagate the information
+			//for the specifiers
+			///set features number and gender
+			//if(specifier instanceof WordElement){
+			//System.out.println("log: modifico specifier" + specifierElement.printTree(" ") );
+			//specifierElement.setFeature(Feature.NUMBER, head.getFeature(Feature.NUMBER));
+			//specifierElement.setFeature(LexicalFeature.GENDER, head.getFeature(LexicalFeature.GENDER));
+			//System.out.println("log: modificato specifier" + specifierElement.printTree(" "));
+			//}
 		}
 	}
 
@@ -217,52 +263,52 @@ public class NPPhraseSpec extends PhraseElement {
 	 */
 	@Override
 	public void addModifier(Object modifier) {
-		// string which is one lexicographic word is looked up in lexicon,
-		// adjective is preModifier
-		// Everything else is postModifier
-		if (modifier == null)
-			return;
-
-		// get modifier as NLGElement if possible
-		NLGElement modifierElement = null;
-		if (modifier instanceof NLGElement)
-			modifierElement = (NLGElement) modifier;
-		else if (modifier instanceof String) {
-			String modifierString = (String) modifier;
-			if (modifierString.length() > 0 && !modifierString.contains(" "))
-				modifierElement = getFactory().createWord(modifier,
-						LexicalCategory.ANY);
+		getNounPhraseHelper().addModifier(this, modifier);
+	}
+	
+	/**
+	 * Adds a new pre-modifier to the phrase element.
+	 * 
+	 * @param newPreModifier
+	 *            the new pre-modifier as a <code>String</code>. It is used to
+	 *            create a <code>StringElement</code>.
+	 * @author vaudrypl
+	 */
+	public void addPreModifier(String newPreModifier) {
+		Lexicon lexicon = getLexicon();
+		NLGElement newElement;
+		if (lexicon.hasWord(newPreModifier)) {
+			newElement = lexicon.lookupWord(newPreModifier);
 		}
-
-		// if no modifier element, must be a complex string, add as postModifier
-		if (modifierElement == null) {
-			addPostModifier((String) modifier);
-			return;
+		else {
+			newElement = getFactory().createNLGElement(newPreModifier,
+					LexicalCategory.ADJECTIVE);
 		}
+		addPreModifier(newElement);
+	}
 
-		// AdjP is premodifer
-		if (modifierElement instanceof AdjPhraseSpec) {
-			addPreModifier(modifierElement);
-			return;
+	/**
+	 * Checks if this element must provoke a negation, but with only
+	 * the adverb "ne", in French.
+	 * 
+	 * @return true if the element provokes a negation with only "ne"
+	 * 
+	 * @author vaudrypl
+	 */
+	@Override
+	public boolean checkIfNeOnlyNegation() {
+		boolean specifierNeNegation = false;
+		NLGElement specifier = getSpecifier();
+		if (specifier != null) {
+			specifierNeNegation = specifier.checkIfNeOnlyNegation();
 		}
-
-		// else extract WordElement if modifier is a single word
-		WordElement modifierWord = null;
-		if (modifierElement != null && modifierElement instanceof WordElement)
-			modifierWord = (WordElement) modifierElement;
-		else if (modifierElement != null
-				&& modifierElement instanceof InflectedWordElement)
-			modifierWord = ((InflectedWordElement) modifierElement)
-					.getBaseWord();
-
-		// check if modifier is an adjective
-		if (modifierWord != null
-				&& modifierWord.getCategory() == LexicalCategory.ADJECTIVE) {
-			addPreModifier(modifierWord);
-			return;
+		
+		boolean headNeNegation = false;
+		NLGElement head = getHead();
+		if (head != null) {
+			headNeNegation = head.checkIfNeOnlyNegation();
 		}
-
-		// default case
-		addPostModifier(modifierElement);
+		
+		return specifierNeNegation || headNeNegation;
 	}
 }

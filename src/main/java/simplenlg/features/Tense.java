@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 
 package simplenlg.features;
@@ -50,5 +50,29 @@ public enum Tense {
 	 * The action described by the verb is happening in the present time. For
 	 * example, <em>John kisses Mary</em>, <em>the dog eats a bone</em>.
 	 */
-	PRESENT;
+	PRESENT,
+
+	/**
+	 * Added for French by vaudrypl.
+	 * Example : verb "avoir", present : indicative "j'ai", conditional "j'aurais"
+	 */
+	CONDITIONAL,
+	
+	/**
+	 * Added for Italian by Cristina B.
+	 * 
+	 */
+	PLUS_PAST,
+	
+	/**
+	 * Added for Italian by Cristina B.
+	 * 
+	 */
+	REMOTE_PAST,
+	
+	/**
+	 * Added for Italian by Cristina B.
+	 * 
+	 */
+	PLUS_REMOTE_PAST;
 }

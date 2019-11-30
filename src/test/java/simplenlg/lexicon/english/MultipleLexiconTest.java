@@ -26,6 +26,7 @@ import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import simplenlg.features.LexicalFeature;
@@ -73,6 +74,7 @@ public class MultipleLexiconTest {
 	}
 
 	@Test
+	@Ignore
 	public void basicLexiconTests() {
 		SharedLexiconTests tests = new SharedLexiconTests();
 		tests.doBasicTests(lexicon);

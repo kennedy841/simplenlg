@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 
 package simplenlg.features;
@@ -81,5 +81,16 @@ public enum Form {
 	 * verb being used as a noun. The present participle remains as a verb. For 
 	 * example, <em>Jim was <b>sleeping</b></em>.
 	 */
-	PRESENT_PARTICIPLE;
+	PRESENT_PARTICIPLE,
+	
+	/**
+	 * Added for French by vaudrypl. Used with complementizer "que" in some cases.
+	 * Example : verb "avoir", present : indicative "j'ai", subjonctive "que j'aie"
+	 */
+	SUBJUNCTIVE,
+	
+	/**
+	 * Added for Italian by Cristina. Conditional in italian is a form.
+	 */
+	CONDITIONAL;
 }

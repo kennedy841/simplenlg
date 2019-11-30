@@ -14,13 +14,14 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.lexicon;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import simplenlg.framework.Language;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.WordElement;
 
@@ -63,6 +64,54 @@ public class MultipleLexicon extends Lexicon {
 			lexiconList.add(lex);
 	}
 	
+	/**
+	 * create an empty multi lexicon
+	 * with specified associated language
+	 * @param language
+	 * @author vaudrypl
+	 */
+	public MultipleLexicon(Language language) {
+		super(language);
+		lexiconList = new ArrayList<Lexicon>();
+		alwaysSearchAll = false;
+	}
+	
+	/** create a multi lexicon with the specified lexicons
+	 * with specified associated language
+	 * @param language
+	 * @param lexicons
+	 * @author vaudrypl
+	 */
+	public MultipleLexicon(Language language, Lexicon... lexicons) {
+		this(language);
+		for (Lexicon lex: lexicons)
+			lexiconList.add(lex);
+	}
+	
+	/**
+	 * create an empty multi lexicon
+	 * with specified associated language ISO 639-1 two letter code
+	 * @param language
+	 * @author vaudrypl
+	 */
+	public MultipleLexicon(String languageCode) {
+		super(languageCode);
+		lexiconList = new ArrayList<Lexicon>();
+		alwaysSearchAll = false;
+	}
+	
+	/** create a multi lexicon with the specified lexicons
+	 * with specified associated language ISO 639-1 two letter code
+	 * @param language
+	 * @param lexicons
+	 * @author vaudrypl
+	 */
+	public MultipleLexicon(String languageCode, Lexicon... lexicons) {
+		this(languageCode);
+		for (Lexicon lex: lexicons)
+			lexiconList.add(lex);
+	}
+	
 	/**********************************************************************/
 	// routines to add more lexicons, change flags
 	/**********************************************************************/
@@ -78,7 +127,9 @@ public class MultipleLexicon extends Lexicon {
 	 * @param lex
 	 */
 	public void addFinalLexicon(Lexicon lex) {
-		lexiconList.add(0, lex);
+		// corrected by vaudrypl
+		// lexiconList.add(0, lex);
+		lexiconList.add(lex);
 	}
 
 	/**
@@ -150,6 +201,58 @@ public class MultipleLexicon extends Lexicon {
 		return result;
 	}
 
+
+	/**
+	 * Creates a default WordElement with the specified category
+	 * using the first lexicon in the lexicon list.
+	 * If the lexicon list is empty, uses the method from
+	 * the Lexicon superclass.
+	 * 
+	 * @param baseForm
+	 *            - base form of word
+	 * @param category
+	 *            - category of word
+	 * @return WordElement entry for specified info
+	 * @author vaudrypl
+	 */
+	@Override
+	protected WordElement createWord(String baseForm, LexicalCategory category) {
+		WordElement newWord;
+		if (lexiconList.isEmpty()) {
+			newWord = super.createWord(baseForm, category);
+		} else {
+			Lexicon firstLexicon = lexiconList.get(0);
+			newWord = firstLexicon.createWord(baseForm, category);
+		}
+		return newWord; // return default
+		// WordElement of this
+		// baseForm, category
+	}
+
+	/**
+	 * Creates a default WordElement using the first lexicon
+	 * in the lexicon list.
+	 * If the lexicon list is empty, uses the method from
+	 * the Lexicon superclass.
+	 * 
+	 * @param baseForm
+	 *            - base form of word
+	 * @return WordElement entry for specified info
+	 * @author vaudrypl
+	 */
+	@Override
+	protected WordElement createWord(String baseForm) {
+		WordElement newWord;
+		if (lexiconList.isEmpty()) {
+			newWord = super.createWord(baseForm);
+		} else {
+			Lexicon firstLexicon = lexiconList.get(0);
+			newWord = firstLexicon.createWord(baseForm);
+		}
+		return newWord; // return default
+		// WordElement of this
+		// baseForm
+	}
 
 	/**********************************************************************/
 	// other methods

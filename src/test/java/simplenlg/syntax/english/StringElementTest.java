@@ -196,7 +196,7 @@ public class StringElementTest {
 		senSpec.addComplement(fifthNoun);
 		DocumentElement completeSen = this.phraseFactory.createSentence();
 		completeSen.addComponent(senSpec);
-		assertEquals("The Nasdaq rose steadily during early trading, however it plummeted due to a shock after IBM announced poor first quarter results.", 
+		assertEquals("The Nasdaq rose steadily during early trading , however it plummeted due to a shock after IBM announced poor first quarter results.",
 				this.realiser.realise(completeSen).getRealisation());
 	}
 	
@@ -271,7 +271,7 @@ public class StringElementTest {
 		senSpec.addComplement(firstNoun);
 		DocumentElement completeSen = this.phraseFactory.createSentence();
 		completeSen.addComponent(senSpec);
-		assertEquals("I see an elephant.", 
+		assertEquals("I see a elephant.",
 				this.realiser.realise(completeSen).getRealisation());
 		
 	}

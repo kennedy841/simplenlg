@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 
 package simplenlg.phrasespec;
@@ -24,17 +24,17 @@ import java.util.Arrays;
 import java.util.List;
 
 import simplenlg.features.ClauseStatus;
+import simplenlg.features.DiscourseFunction;
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
 import simplenlg.features.LexicalFeature;
+import simplenlg.features.french.FrenchFeature;
 import simplenlg.framework.CoordinatedPhraseElement;
-import simplenlg.framework.InflectedWordElement;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
-import simplenlg.framework.NLGFactory;
 import simplenlg.framework.PhraseCategory;
 import simplenlg.framework.PhraseElement;
-import simplenlg.framework.WordElement;
+import simplenlg.framework.NLGFactory;
 
 /**
  * <p>
@@ -97,7 +97,9 @@ public class SPhraseSpec extends PhraseElement {
 			Feature.TENSE, Feature.NEGATED, Feature.NUMBER, Feature.PASSIVE,
 			Feature.PERFECT, Feature.PARTICLE, Feature.PERSON,
 			Feature.PROGRESSIVE, InternalFeature.REALISE_AUXILIARY,
-			Feature.FORM, Feature.INTERROGATIVE_TYPE);
+			Feature.FORM, Feature.INTERROGATIVE_TYPE,
+			// vaudrypl added gender for participle agreement in French
+			LexicalFeature.GENDER, FrenchFeature.NEGATION_AUXILIARY);
 
 	/**
 	 * create an empty clause
@@ -114,14 +116,15 @@ public class SPhraseSpec extends PhraseElement {
 		setFeature(InternalFeature.CLAUSE_STATUS, ClauseStatus.MATRIX);
 		setFeature(Feature.SUPRESSED_COMPLEMENTISER, false);
 		setFeature(LexicalFeature.EXPLETIVE_SUBJECT, false);
-		setFeature(Feature.COMPLEMENTISER, phraseFactory.createWord(
-				"that", LexicalCategory.COMPLEMENTISER)); //$NON-NLS-1$
-
+		setFeature(Feature.COMPLEMENTISER,
+				getLexicon().getDefaultComplementiser() ); //$NON-NLS-1$
+				//phraseFactory.createWord(
+				//"that", LexicalCategory.COMPLEMENTISER)
 	}
 
 	// intercept and override setFeature, to set VP features as needed
 
-	/**
+	/*
 	 * adds a feature, possibly to the underlying VP as well as the SPhraseSpec
 	 * itself
 	 * 
@@ -131,11 +134,11 @@ public class SPhraseSpec extends PhraseElement {
 	@Override
 	public void setFeature(String featureName, Object featureValue) {
 		super.setFeature(featureName, featureValue);
-		
-		if (vpFeatures.contains(featureName)) {									
-			NLGElement verbPhrase = (NLGElement) getFeatureAsElement(InternalFeature.VERB_PHRASE);
-			if (verbPhrase != null || verbPhrase instanceof VPPhraseSpec)
-				verbPhrase.setFeature(featureName, featureValue);
+		if (vpFeatures.contains(featureName)) {
+			// type PhraseElement changed to NLGElement by vaudrypl
+			NLGElement verbPhrase = getFeatureAsElement(InternalFeature.VERB_PHRASE);
+			// if (verbPhrase != null || verbPhrase instanceof VPPhraseSpec)
+			verbPhrase.setFeature(featureName, featureValue);
 		}
 	}
 
@@ -201,27 +204,10 @@ public class SPhraseSpec extends PhraseElement {
 	public void setFeature(String featureName, boolean featureValue) {
 		super.setFeature(featureName, featureValue);
 		if (vpFeatures.contains(featureName)) {
-			//PhraseElement verbPhrase = (PhraseElement) getFeatureAsElement(InternalFeature.VERB_PHRASE);
-			//AG: bug fix: VP could be coordinate phrase, so cast to NLGElement not PhraseElement
-			NLGElement verbPhrase = (NLGElement) getFeatureAsElement(InternalFeature.VERB_PHRASE);
-			if (verbPhrase != null || verbPhrase instanceof VPPhraseSpec)
+			NLGElement verbPhrase = getFeatureAsElement(InternalFeature.VERB_PHRASE);
+//			if (verbPhrase != null || verbPhrase instanceof VPPhraseSpec)
 				verbPhrase.setFeature(featureName, featureValue);
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see simplenlg.framework.NLGElement#getFeature(java.lang.String)
-	 */
-	@Override
-	public Object getFeature(String featureName) {
-		if (super.getFeature(featureName) != null)
-			return super.getFeature(featureName);
-		if (vpFeatures.contains(featureName)) {
-			NLGElement verbPhrase = (NLGElement) getFeatureAsElement(InternalFeature.VERB_PHRASE);
-			if (verbPhrase != null || verbPhrase instanceof VPPhraseSpec)
-				return verbPhrase.getFeature(featureName);
-		}
-		return null;
 	}
 
 	/**
@@ -295,6 +281,10 @@ public class SPhraseSpec extends PhraseElement {
 		List<NLGElement> subjects = new ArrayList<NLGElement>();
 		subjects.add(subjectPhrase);
 		setFeature(InternalFeature.SUBJECTS, subjects);
+		// added by vaudrypl
+		subjectPhrase.setParent(this);
+		subjectPhrase.setFeature( InternalFeature.DISCOURSE_FUNCTION,
+				DiscourseFunction.SUBJECT);
 	}
 
 	/**
@@ -379,65 +369,99 @@ public class SPhraseSpec extends PhraseElement {
 	/**
 	 * Add a modifier to a clause Use heuristics to decide where it goes
 	 * 
+	 * code moved to
+	 * simplenl.syntax.english.nonstatic.ClauseHelper.addModifier(SPhraseSpec clause, Object modifier)
+	 * by vaudrypl
+	 * 
 	 * @param modifier
 	 */
 	@Override
 	public void addModifier(Object modifier) {
-		// adverb is frontModifier if sentenceModifier
-		// otherwise adverb is preModifier
-		// string which is one lexicographic word is looked up in lexicon,
-		// above rules apply if adverb
-		// Everything else is postModifier
-
-		if (modifier == null)
-			return;
-
-		// get modifier as NLGElement if possible
-		NLGElement modifierElement = null;
-		if (modifier instanceof NLGElement)
-			modifierElement = (NLGElement) modifier;
-		else if (modifier instanceof String) {
-			String modifierString = (String) modifier;
-			if (modifierString.length() > 0 && !modifierString.contains(" "))
-				modifierElement = getFactory().createWord(modifier,
-						LexicalCategory.ANY);
+		getClauseHelper().addModifier(this, modifier);
+	}
+	
+	/**
+	 * Removes all existing modifiers on the clause and its verb phrase.
+	 * @author vaudrypl
+	 */
+	@Override
+	public void clearModifiers() {		
+		super.clearModifiers();		
+		Object verbPhrase = getFeature(InternalFeature.VERB_PHRASE);
+		if (verbPhrase instanceof VPPhraseSpec) {
+			((VPPhraseSpec)verbPhrase).clearModifiers();
 		}
-
-		// if no modifier element, must be a complex string
-		if (modifierElement == null) {
-			addPostModifier((String) modifier);
-			return;
+	}
+	
+	/**
+	 * Removes all existing modifiers on the clause and its verb phrase.
+	 * @author vaudrypl
+	 */
+	@Override
+	public void clearComplements() {		
+		super.clearComplements();		
+		Object verbPhrase = getFeature(InternalFeature.VERB_PHRASE);
+		if (verbPhrase instanceof VPPhraseSpec) {
+			((VPPhraseSpec)verbPhrase).clearComplements();
 		}
-
-		// AdvP is premodifer (probably should look at head to see if
-		// sentenceModifier)
-		if (modifierElement instanceof AdvPhraseSpec) {
-			addPreModifier(modifierElement);
-			return;
-		}
-
-		// extract WordElement if modifier is a single word
-		WordElement modifierWord = null;
-		if (modifierElement != null && modifierElement instanceof WordElement)
-			modifierWord = (WordElement) modifierElement;
-		else if (modifierElement != null
-				&& modifierElement instanceof InflectedWordElement)
-			modifierWord = ((InflectedWordElement) modifierElement)
-					.getBaseWord();
-
-		if (modifierWord != null
-				&& modifierWord.getCategory() == LexicalCategory.ADVERB) {
-			// adverb rules
-			if (modifierWord
-					.getFeatureAsBoolean(LexicalFeature.SENTENCE_MODIFIER))
-				addFrontModifier(modifierWord);
-			else
-				addPreModifier(modifierWord);
-			return;
-		}
-
-		// default case
-		addPostModifier(modifierElement);
+	}
+	
+	/**
+	 * Adds a new pre-modifier to the phrase element.
+	 * 
+	 * @param newPreModifier
+	 *            the new pre-modifier as a <code>String</code>. It is used to
+	 *            create a <code>StringElement</code>.
+	 */
+	@Override // overridding method added by vaudrypl
+	public void addPreModifier(String newPreModifier) {
+		NLGElement newElement =
+			getFactory().createNLGElement(newPreModifier, LexicalCategory.ADVERB);
+		addPreModifier(newElement);
 	}
 
+	/**
+	 * Adds a new post-modifier to the phrase element. Post-modifiers will be
+	 * realised in the syntax after the complements.
+	 * 
+	 * @param newPostModifier
+	 *            the new post-modifier as a <code>String</code>. It is used to
+	 *            create a <code>StringElement</code>.
+	 */
+	@Override // overridding method added by vaudrypl
+	public void addPostModifier(String newPostModifier) {
+		NLGElement newElement =
+			getFactory().createNLGElement(newPostModifier, LexicalCategory.ADVERB);
+		addPostModifier(newElement);
+	}
+	
+	/**
+	 * Tests if the clause has a phrase that has been marked to be realised
+	 * as a relative pronoun and that has the given discourse function.
+	 *  
+	 * @param function
+	 * @return true if the clause has a relative phrase of the given discourse function;
+	 *         false otherwise
+	 */
+	@Override
+	public boolean hasRelativePhrase(DiscourseFunction function) {
+		
+		NLGElement relative = getFeatureAsElement(FrenchFeature.RELATIVE_PHRASE);
+		
+		if (relative != null) {
+			Object relativeFunction =
+					relative.getFeature(InternalFeature.DISCOURSE_FUNCTION);
+			if (relativeFunction == function) {
+				return true;
+			} else if (function == DiscourseFunction.SUBJECT) {
+				List<NLGElement> subjects =
+						getFeatureAsElementList(InternalFeature.SUBJECTS);
+				return subjects.contains(relative);
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
 }

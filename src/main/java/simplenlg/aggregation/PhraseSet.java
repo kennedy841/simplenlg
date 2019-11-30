@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.aggregation;
 
@@ -31,7 +31,7 @@ import simplenlg.framework.NLGElement;
 /**
  * This class wraps an ordered list of phrases which are constituents of two or
  * more (different) clauses and have the same discourse function in their parent
- * clause. FunctionPairs are used by {@link AggregationRule}s to collect candidate
+ * clause. FunctionPairs are used by {@link EllipsisRule}s to collect candidate
  * phrase for elision.
  * 
  * @author agatt
@@ -116,7 +116,9 @@ public class PhraseSet {
 	 * <code>true</code> in the following cases:
 	 * 
 	 * <OL>
-	 * <LI>All phrases are {@link simplenlg.framework.NLGElement}s and they
+	 * <LI>All phrases are {@link simplenlg.phrasespec.StringPhraseSpec}s and they
+	 * have identical String content</LI>
+	 * <LI>All phrases are {@link simplenlg.framework.PhraseElement}s and they
 	 * have the same lexical head, irrespective of inflectional variations.</LI>
 	 * </OL>
 	 * 

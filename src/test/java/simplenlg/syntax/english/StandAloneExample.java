@@ -83,7 +83,7 @@ public class StandAloneExample {
 		// below creates a sentence DocumentElement by concatenating strings
 		StringElement hePlayed = new StringElement("he played");        
 		StringElement there = new StringElement("there");
-		WordElement football = new WordElement("football");
+		WordElement football = new WordElement("football", Lexicon.getDefaultLexicon());
 
 		DocumentElement sentence2 = nlgFactory.createSentence();
 		sentence2.addComponent(hePlayed);

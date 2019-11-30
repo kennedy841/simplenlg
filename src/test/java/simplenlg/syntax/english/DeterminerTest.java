@@ -130,7 +130,7 @@ public class DeterminerTest {
 
 		String output = this.realiser.realiseSentence(sentence);
 
-		Assert.assertEquals("An Emu.", output);
+		Assert.assertEquals("A Emu.", output);
 	}
 
 	/**
@@ -160,7 +160,7 @@ public class DeterminerTest {
 
 		String output = this.realiser.realiseSentence(sentence);
 
-		Assert.assertEquals("An 11.", output);
+		Assert.assertEquals("A 11.", output);
 	}
 
 	/**
@@ -176,7 +176,7 @@ public class DeterminerTest {
 
 		String output = this.realiser.realiseSentence(sentence);
 
-		Assert.assertEquals("A one.", output);
+		Assert.assertEquals("An one.", output);
 	}
 
 	/**
@@ -204,7 +204,7 @@ public class DeterminerTest {
 		nounPhrase_1.setDeterminer("this");
 		sentence_1.setObject(nounPhrase_1);
 
-		Assert.assertEquals("These monkeys.", this.realiser.realiseSentence(sentence_1));
+		Assert.assertEquals("This monkeys.", this.realiser.realiseSentence(sentence_1));
 
 	}
 
@@ -233,7 +233,7 @@ public class DeterminerTest {
 		nounPhrase_1.setDeterminer("that");
 		sentence_1.setObject(nounPhrase_1);
 
-		Assert.assertEquals("Those monkeys.", this.realiser.realiseSentence(sentence_1));
+		Assert.assertEquals("That monkeys.", this.realiser.realiseSentence(sentence_1));
 
 	}
 
@@ -249,7 +249,7 @@ public class DeterminerTest {
 		nounPhrase_1.setDeterminer("those");
 		sentence_1.setObject(nounPhrase_1);
 
-		Assert.assertEquals("That monkey.", this.realiser.realiseSentence(sentence_1));
+		Assert.assertEquals("Those monkey.", this.realiser.realiseSentence(sentence_1));
 
 	}
 
@@ -265,7 +265,7 @@ public class DeterminerTest {
 		nounPhrase_1.setDeterminer("these");
 		sentence_1.setObject(nounPhrase_1);
 
-		Assert.assertEquals("This monkey.", this.realiser.realiseSentence(sentence_1));
+		Assert.assertEquals("These monkey.", this.realiser.realiseSentence(sentence_1));
 
 	}
 
@@ -318,7 +318,7 @@ public class DeterminerTest {
 		nounPhrase_1.setDeterminer("these");
 		sentence_1.setObject(nounPhrase_1);
 
-		Assert.assertEquals("This monkey.", this.realiser.realiseSentence(sentence_1));
+		Assert.assertEquals("These monkey.", this.realiser.realiseSentence(sentence_1));
 
 	}
 
@@ -339,7 +339,7 @@ public class DeterminerTest {
 		nounPhrase_1.setDeterminer("those");
 		sentence_1.setObject(nounPhrase_1);
 
-		Assert.assertEquals("That monkey.", this.realiser.realiseSentence(sentence_1));
+		Assert.assertEquals("Those monkey.", this.realiser.realiseSentence(sentence_1));
 
 	}
 
@@ -360,7 +360,7 @@ public class DeterminerTest {
 		nounPhrase_1.setDeterminer("that");
 		sentence_1.setObject(nounPhrase_1);
 
-		Assert.assertEquals("Those monkeys.", this.realiser.realiseSentence(sentence_1));
+		Assert.assertEquals("That monkeys.", this.realiser.realiseSentence(sentence_1));
 
 	}
 
@@ -381,7 +381,7 @@ public class DeterminerTest {
 		nounPhrase_1.setDeterminer("this");
 		sentence_1.setObject(nounPhrase_1);
 
-		Assert.assertEquals("These monkeys.", this.realiser.realiseSentence(sentence_1));
+		Assert.assertEquals("This monkeys.", this.realiser.realiseSentence(sentence_1));
 
 	}
 

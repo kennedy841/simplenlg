@@ -14,7 +14,7 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.framework;
 
@@ -73,7 +73,7 @@ public enum PhraseCategory implements ElementCategory {
 		boolean match = false;
 
 		if (checkObject != null) {
-			if (checkObject instanceof PhraseCategory) {
+			if (checkObject instanceof DocumentCategory) {
 				match = this.equals(checkObject);
 			} else {
 				match = this.toString()

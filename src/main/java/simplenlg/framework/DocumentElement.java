@@ -14,12 +14,14 @@
  * The Initial Developer of the Original Code is Ehud Reiter, Albert Gatt and Dave Westwater.
  * Portions created by Ehud Reiter, Albert Gatt and Dave Westwater are Copyright (C) 2010-11 The University of Aberdeen. All Rights Reserved.
  *
- * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell.
+ * Contributor(s): Ehud Reiter, Albert Gatt, Dave Wewstwater, Roman Kutlak, Margaret Mitchell, Pierre-Luc Vaudry.
  */
 package simplenlg.framework;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import simplenlg.features.Feature;
 
 /**
  * <p>
@@ -61,6 +63,21 @@ public class DocumentElement extends NLGElement {
 	}
 
 	/**
+	 * Using this constructor will require manual setting
+	 * of the element's category and title.
+	 * The factory is set. This constructor should be prefered over the blank constructor
+	 * wherever the factory is known. The language is indirectly determined by the factory.
+	 * 
+	 * @param factory
+	 * 			  the factory who created this phrase
+	 * @author vaudrypl
+	 */
+	public DocumentElement(NLGFactory factory) {
+		this();
+		setFactory(factory);
+	}
+
+	/**
 	 * Creates a new DocumentElement with the given category and title.
 	 * 
 	 * @param category
@@ -72,6 +89,26 @@ public class DocumentElement extends NLGElement {
 	public DocumentElement(DocumentCategory category, String textTitle) {
 		this.setCategory(category);
 		setTitle(textTitle);
+	}
+
+	/**
+	 * Creates a new DocumentElement with the given category and title.
+	 * The factory is also set. This constructor should be prefered over the two-arguments
+	 * constructor wherever the factory is known. The language is indirectly determined
+	 * by the factory.
+	 * 
+	 * @param category
+	 *            the category for this element.
+	 * @param textTitle
+	 *            the title of this element, predominantly used with DOCUMENT
+	 *            and SECTION types.
+	 * @param factory
+	 * 			  the factory who created this phrase
+	 * @author vaudrypl
+	 */
+	public DocumentElement(DocumentCategory category, String textTitle, NLGFactory factory) {
+		this(category, textTitle);
+		setFactory(factory);
 	}
 
 	/**
@@ -223,6 +260,10 @@ public class DocumentElement extends NLGElement {
 				}
 				components.addAll(elementsToAdd);
 				this.setFeature(FEATURE_COMPONENTS, components);
+				// added by vaudrypl
+				for (NLGElement component : components) {
+					component.setParent(this);
+				}
 			}
 		}
 	}
@@ -244,6 +285,10 @@ public class DocumentElement extends NLGElement {
 			List<NLGElement> components = getComponents();
 			if (components != null) {
 				removed = components.remove(textComponent);
+				// added by vaudrypl
+				if (removed && textComponent.getParent() == this) {
+					textComponent.setParent(null);
+				}
 			}
 		}
 		return removed;
@@ -254,7 +299,15 @@ public class DocumentElement extends NLGElement {
 	 */
 	public void clearComponents() {
 		List<NLGElement> components = getComponents();
+		
 		if (components != null) {
+			// added by vaudrypl
+			for (NLGElement component : components) {
+				if (component.getParent() == this) {
+					component.setParent(null);
+				}
+			}
+			
 			components.clear();
 		}
 	}
@@ -280,6 +333,10 @@ public class DocumentElement extends NLGElement {
 	 */
 	public void setComponents(List<NLGElement> components) {
 		this.setFeature(FEATURE_COMPONENTS, components);
+		// added by vaudrypl
+		for (NLGElement component : components) {
+			component.setParent(this);
+		}
 	}
 
 	@Override
@@ -289,13 +346,17 @@ public class DocumentElement extends NLGElement {
 		String lastIndent = indent == null ? " \\-" : indent + " \\-"; //$NON-NLS-1$ //$NON-NLS-2$
 		String lastChildIndent = indent == null ? "   " : indent + "   "; //$NON-NLS-1$ //$NON-NLS-2$
 		StringBuffer print = new StringBuffer();
-		print.append("DocumentElement: category=").append( //$NON-NLS-1$ 
-				getCategory().toString());
-
-		String realisation = getRealisation();
-		if (realisation != null) {
-			print.append(" realisation=").append(realisation); //$NON-NLS-1$
-		}
+		
+		// changes by vaudrypl
+		print.append("DocumentElement: ").append(toString());
+//		print.append("DocumentElement: category=").append( //$NON-NLS-1$ 
+//				getCategory().toString());
+//
+//		String realisation = getRealisation();
+//		if (realisation != null) {
+//			print.append(" realisation=").append(realisation); //$NON-NLS-1$
+//		}
+		
 		print.append('\n');
 
 		List<NLGElement> children = getChildren();
@@ -312,4 +373,83 @@ public class DocumentElement extends NLGElement {
 		}
 		return print.toString();
 	}
+	
+	/**
+	 * Realisation method for the syntax stage.
+	 * based on english SyntaxProcessor
+	 * 
+	 * @return syntactically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseSyntax()
+	{
+		if (getFeatureAsBoolean(Feature.ELIDED).booleanValue()) {
+			return null;
+		}
+		
+		List<NLGElement> children = getChildren();
+		setComponents( realiseSyntax(children) );
+		return this;
+	}
+
+	/**
+	 * Realisation method for the morphology stage.
+	 * based on english MorphologyProcessor
+	 * 
+	 * @return morphologically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseMorphology()
+	{
+		List<NLGElement> children = getChildren();
+		setComponents(realiseMorphology(children));
+		return this;
+	}
+	
+	/**
+	 * Realisation method for the orthography stage.
+	 * based on english OrthographyProcessor
+	 * 
+	 * @return orthographically realised form
+	 * @author vaudrypl
+	 */
+	public NLGElement realiseOrthography()
+	{
+		NLGElement realisedElement = null;
+		ElementCategory category = getCategory();
+		
+		if (category instanceof DocumentCategory) {
+			List<NLGElement> components = getComponents();
+
+			switch ((DocumentCategory) category) {
+
+			case SENTENCE:
+				realisedElement = getOrthographyHelper().realiseSentence(components, this);
+				break;
+
+			case LIST_ITEM:
+				if (components != null && components.size() > 0) {
+					// recursively realise whatever's in the list item
+					// NB: this will realise embedded lists within list
+					// items
+					realisedElement = new ListElement(realiseOrthography(components));
+				}
+				break;
+
+			default:
+				setComponents(realiseOrthography(components));
+				realisedElement = this;
+			}
+
+		}
+		
+		//make the realised element inherit the original category
+		//essential if list items are to be properly formatted later
+		if (realisedElement != null) {
+			realisedElement.setCategory(category);
+		}
+		
+		return realisedElement;
+	}
+
 }
