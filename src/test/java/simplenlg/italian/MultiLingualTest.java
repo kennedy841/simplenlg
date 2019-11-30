@@ -47,7 +47,7 @@ public class MultiLingualTest {
         document.addComponent(paragraph);
 
         String outString = realiser.realise(document).getRealisation();
-        Assert.assertThat("Paolo amava Freancesca. John loved Mary. Pierre a aimé Sophie.", is(outString));
+        Assert.assertThat("Trilingual love\n\nPaolo amava Freancesca. John loved Mary. Pierre a aimé Sophie.\n\n", is(outString));
         System.out.print(outString);
     }
 }
